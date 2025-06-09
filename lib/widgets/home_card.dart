@@ -5,7 +5,7 @@ class HomeCard extends StatelessWidget {
   final String title;
   final VoidCallback onTap;
 
-  const HomeCard({
+  const HomeCard({super.key, 
     required this.icon,
     required this.title,
     required this.onTap,

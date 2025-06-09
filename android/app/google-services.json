@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "290347009658",
-    "project_id": "strathuconnect",
-    "storage_bucket": "strathuconnect.firebasestorage.app"
+    "project_number": "980865980036",
+    "project_id": "strathmore-university-app",
+    "storage_bucket": "strathmore-university-app.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:290347009658:android:af1fae6ccc45b0c2c6ddc3",
+        "mobilesdk_app_id": "1:980865980036:android:05a105b2146e86bb4ed4d1",
         "android_client_info": {
           "package_name": "com.example.strathapp"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyA-zLqAzpx6qa0_7UsyUuXJ04mayecAUgw"
+          "current_key": "AIzaSyCEEei0JDqblk47aspuE2WzCMDd8GqpaNE"
         }
       ],
       "services": {
