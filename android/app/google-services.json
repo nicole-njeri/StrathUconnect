@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "290347009658",
+    "project_id": "strathuconnect",
+    "storage_bucket": "strathuconnect.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:290347009658:android:af1fae6ccc45b0c2c6ddc3",
+        "android_client_info": {
+          "package_name": "com.example.strathapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA-zLqAzpx6qa0_7UsyUuXJ04mayecAUgw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
