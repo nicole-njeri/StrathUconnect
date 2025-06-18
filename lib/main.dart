@@ -8,7 +8,7 @@ import 'screens/login_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  runApp(StrathUConnectApp());
+  runApp(const StrathUConnectApp());
 }
 
 class StrathUConnectApp extends StatelessWidget {
@@ -41,11 +41,11 @@ class StrathUConnectApp extends StatelessWidget {
 
           if (snapshot.hasData) {
             print("[Main] User is authenticated. Showing HomeScreen.");
-            return HomeScreen();
+            return const HomeScreen();
           }
 
           print("[Main] User is not authenticated. Showing LoginScreen.");
-          return LoginScreen();
+          return const LoginScreen();
         },
       ),
     );

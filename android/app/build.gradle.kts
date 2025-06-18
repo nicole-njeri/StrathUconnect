@@ -4,13 +4,12 @@ plugins {
     id("com.google.gms.google-services")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
-
 }
-
 
 android {
     namespace = "com.example.strathapp"
     compileSdk = 34
+    ndkVersion = "25.1.8937393"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -46,8 +45,11 @@ flutter {
     source = "../.."
 }
 
+
 dependencies {
     implementation(platform("com.google.firebase:firebase-bom:32.7.0"))
     implementation("com.google.firebase:firebase-analytics")
+    implementation("com.google.firebase:firebase-auth")
+    implementation("com.google.firebase:firebase-firestore")
     implementation("com.android.support:multidex:1.0.3")
 }

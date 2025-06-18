@@ -17,7 +17,7 @@ class HomeCard extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
       child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
         decoration: BoxDecoration(
           border: Border.all(color: Colors.black12),
           borderRadius: BorderRadius.circular(12),
@@ -26,10 +26,10 @@ class HomeCard extends StatelessWidget {
         child: Row(
           children: [
             Icon(icon, size: 28),
-            SizedBox(width: 16),
+            const SizedBox(width: 16),
             Text(
               title,
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
             ),
           ],
         ),
