@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
-import '../widgets/home_card.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'find_place_screen.dart';
+import 'ask_question_screen.dart';
+import 'checklist_screen.dart';
+import 'campus_updates_screen.dart';
+import 'events_calendar_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -18,24 +22,38 @@ class _HomeScreenState extends State<HomeScreen> {
   String? _error;
 
   final List<Map<String, dynamic>> cards = [
-    {'icon': Icons.place, 'title': 'Find a Place'},
-    {'icon': Icons.chat_bubble_outline, 'title': 'Ask a Question'},
-    {'icon': Icons.check_box, 'title': 'My Checklist'},
-    {'icon': Icons.campaign_outlined, 'title': 'Campus Updates'},
+    {'icon': Icons.place, 'title': 'Find a Place', 'screen': const FindPlaceScreen()},
+    {
+      'icon': Icons.chat_bubble_outline,
+      'title': 'Ask a Question',
+      'screen': const AskQuestionScreen(),
+    },
+    {
+      'icon': Icons.check_box,
+      'title': 'My Checklist',
+      'screen': const ChecklistScreen(),
+    },
+    {
+      'icon': Icons.campaign_outlined,
+      'title': 'Campus Updates',
+      'screen': const CampusUpdatesScreen(),
+    },
+    {
+      'icon': Icons.event,
+      'title': 'Events Calendar',
+      'screen': const EventsCalendarScreen(),
+    },
   ];
 
   @override
   void initState() {
     super.initState();
-    print("[HomeScreen] initState: Kicking off user data load.");
     _loadUserData();
   }
 
   Future<void> _loadUserData() async {
-    print("[HomeScreen] _loadUserData: Attempting to fetch user details...");
     try {
       final snapshot = await _authService.getUserDetails();
-      print("[HomeScreen] _loadUserData: Successfully fetched data. User exists: ${snapshot.exists}");
       if (mounted) {
         setState(() {
           _userSnapshot = snapshot;
@@ -43,7 +61,6 @@ class _HomeScreenState extends State<HomeScreen> {
         });
       }
     } catch (e) {
-      print("[HomeScreen] _loadUserData: An error occurred: $e");
       if (mounted) {
         setState(() {
           _error = "Failed to load user data.";
@@ -65,68 +82,112 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    print("[HomeScreen] build: Running build method. isLoading: $_isLoading, error: $_error");
     return Scaffold(
-      backgroundColor: Color(0xFFFAFAFA), // Light background
-      appBar: AppBar(
-        title: Text('StrathUConnect'),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.logout),
-            onPressed: () async {
-              await _authService.signOut();
-              // The StreamBuilder in main.dart will handle navigation
-            },
+      backgroundColor: const Color(0xFFF4F6FA),
+      body: Column(
+        children: [
+          // Blue header
+          Container(
+            decoration: const BoxDecoration(
+              color: Color(0xFF0A2B6B),
+              borderRadius: BorderRadius.only(
+                bottomLeft: Radius.circular(24),
+                bottomRight: Radius.circular(24),
+              ),
+            ),
+            padding: const EdgeInsets.only(
+              top: 48,
+              left: 20,
+              right: 20,
+              bottom: 16,
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'StrathUConnect',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 20,
+                  ),
+                ),
+                Row(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.logout, color: Colors.white),
+                      tooltip: 'Logout',
+                      onPressed: () async {
+                        await _authService.signOut();
+                        // The StreamBuilder in main.dart will handle navigation
+                      },
+                    ),
+                    const SizedBox(width: 4),
+                    const Icon(Icons.open_in_new, color: Colors.white),
+                  ],
+                ),
+              ],
+            ),
           ),
-        ],
-      ),
-      body: SafeArea(
-        child: _isLoading
-            ? Center(child: CircularProgressIndicator())
-            : _error != null
-                ? Center(
-                    child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Text(_error!),
-                  ))
-                : Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 16),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                        child: Text(
-                          'Hi $_userName 👋',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.black87,
+          // Main content
+          Expanded(
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16.0,
+                  vertical: 8,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 16),
+                    Text(
+                      'Hi $_userName 👋',
+                      style: Theme.of(context).textTheme.headlineSmall
+                          ?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: const Color(0xFF0A2B6B),
                           ),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Expanded(
-                        child: Padding(
-                          padding:
-                              const EdgeInsets.symmetric(horizontal: 24.0),
-                          child: ListView.builder(
-                            itemCount: cards.length,
-                            itemBuilder: (context, index) {
-                              return Padding(
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 8.0),
-                                child: HomeCard(
-                                  icon: cards[index]['icon'],
-                                  title: cards[index]['title'],
-                                  onTap: () {},
+                    ),
+                    const SizedBox(height: 16),
+                    ...cards.map(
+                      (card) => Padding(
+                        padding: const EdgeInsets.only(bottom: 16.0),
+                        child: Card(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          elevation: 2,
+                          child: ListTile(
+                            leading: Icon(
+                              card['icon'],
+                              color: const Color(0xFF0A2B6B),
+                              size: 32,
+                            ),
+                            title: Text(
+                              card['title'],
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => card['screen'],
                                 ),
                               );
                             },
                           ),
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
@@ -134,17 +195,29 @@ class _HomeScreenState extends State<HomeScreen> {
           setState(() {
             _currentIndex = index;
           });
-          // Handle navigation or state change for other tabs
+          // You can add navigation logic for other tabs here
         },
-        selectedItemColor: Color(0xFFB50127), // Red
+        selectedItemColor: const Color(0xFF0A2B6B),
         unselectedItemColor: Colors.grey,
-        backgroundColor: Colors.white,
+        showUnselectedLabels: true,
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
-          BottomNavigationBarItem(icon: Icon(Icons.map), label: "Map"),
-          BottomNavigationBarItem(icon: Icon(Icons.list), label: "Tasks"),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: "Profile"),
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.menu_book),
+            label: 'Resources',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.notifications_none),
+            label: 'Notifications',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person_outline),
+            label: 'Profile',
+          ),
         ],
+        type: BottomNavigationBarType.fixed,
+        backgroundColor: Colors.white,
+        elevation: 8,
       ),
     );
   }
