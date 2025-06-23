@@ -8,8 +8,8 @@ plugins {
 
 android {
     namespace = "com.example.strathapp"
-    compileSdk = 34
-    ndkVersion = "25.1.8937393"
+    compileSdk = 35
+    ndkVersion = "27.0.12077973"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
