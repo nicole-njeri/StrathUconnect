@@ -6,6 +6,7 @@ import 'ask_question_screen.dart';
 import 'checklist_screen.dart';
 import 'campus_updates_screen.dart';
 import 'events_calendar_screen.dart';
+import 'login_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -22,7 +23,11 @@ class _HomeScreenState extends State<HomeScreen> {
   String? _error;
 
   final List<Map<String, dynamic>> cards = [
-    {'icon': Icons.place, 'title': 'Find a Place', 'screen': const FindPlaceScreen()},
+    {
+      'icon': Icons.place,
+      'title': 'Find a Place',
+      'screen': const FindPlaceScreen(),
+    },
     {
       'icon': Icons.chat_bubble_outline,
       'title': 'Ask a Question',
@@ -118,8 +123,38 @@ class _HomeScreenState extends State<HomeScreen> {
                       icon: const Icon(Icons.logout, color: Colors.white),
                       tooltip: 'Logout',
                       onPressed: () async {
-                        await _authService.signOut();
-                        // The StreamBuilder in main.dart will handle navigation
+                        showDialog(
+                          context: context,
+                          barrierDismissible: false,
+                          builder: (context) =>
+                              const Center(child: CircularProgressIndicator()),
+                        );
+                        try {
+                          await _authService.signOut();
+                          if (mounted) {
+                            Navigator.of(
+                              context,
+                            ).pop(); // Remove loading dialog
+                            // Fallback: pop all and go to login
+                            Navigator.of(context).pushAndRemoveUntil(
+                              MaterialPageRoute(
+                                builder: (_) => const LoginScreen(),
+                              ),
+                              (route) => false,
+                            );
+                          }
+                        } catch (e) {
+                          if (mounted) {
+                            Navigator.of(
+                              context,
+                            ).pop(); // Remove loading dialog
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Logout failed: ${e.toString()}'),
+                              ),
+                            );
+                          }
+                        }
                       },
                     ),
                     const SizedBox(width: 4),
