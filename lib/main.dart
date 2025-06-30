@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:strathapp/firebase_options.dart';
-import 'screens/home_screen.dart';
+import 'package:strathapp/widgets/auth_wrapper.dart';
 import 'screens/login_screen.dart';
 
 void main() async {
@@ -23,13 +23,9 @@ class StrathUConnectApp extends StatelessWidget {
       home: StreamBuilder<User?>(
         stream: FirebaseAuth.instance.authStateChanges(),
         builder: (context, snapshot) {
-          print(
-            "[Main] StreamBuilder update: ConnectionState: ${snapshot.connectionState}, HasData: ${snapshot.hasData}, HasError: ${snapshot.hasError}",
-          );
-
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Scaffold(
-              body: Center(child: Text("Connecting to Firebase...")),
+              body: Center(child: CircularProgressIndicator()),
             );
           }
 
@@ -40,11 +36,11 @@ class StrathUConnectApp extends StatelessWidget {
           }
 
           if (snapshot.hasData) {
-            print("[Main] User is authenticated. Showing HomeScreen.");
-            return const HomeScreen();
+            // User is authenticated, let the AuthWrapper decide where to go.
+            return const AuthWrapper();
           }
 
-          print("[Main] User is not authenticated. Showing LoginScreen.");
+          // User is not authenticated.
           return const LoginScreen();
         },
       ),

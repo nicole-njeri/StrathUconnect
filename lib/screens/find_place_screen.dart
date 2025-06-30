@@ -13,6 +13,7 @@ class _FindPlaceScreenState extends State<FindPlaceScreen> {
   // Strathmore University coordinates
   static const LatLng _center = LatLng(-1.3094, 36.8148);
 
+<<<<<<< HEAD
   final TextEditingController _searchController = TextEditingController();
   final MapController _mapController = MapController();
 
@@ -81,6 +82,28 @@ class _FindPlaceScreenState extends State<FindPlaceScreen> {
       'icon': Icons.local_parking,
       'color': Colors.grey,
     },
+=======
+  // Example building markers (replace with real coordinates as needed)
+  final List<Marker> _markers = [
+    const Marker(
+      width: 80.0,
+      height: 80.0,
+      point: LatLng(-1.3090, 36.8152),
+      child: Icon(Icons.location_on, color: Colors.red, size: 40),
+    ),
+    const Marker(
+      width: 80.0,
+      height: 80.0,
+      point: LatLng(-1.3096, 36.8145),
+      child: Icon(Icons.location_on, color: Colors.blue, size: 40),
+    ),
+    const Marker(
+      width: 80.0,
+      height: 80.0,
+      point: LatLng(-1.3088, 36.8150),
+      child: Icon(Icons.location_on, color: Colors.green, size: 40),
+    ),
+>>>>>>> a3f40b13e9b02981a261ad0f3583a28481e0bb01
   ];
 
   List<Map<String, dynamic>> get _filteredLocations {
@@ -316,6 +339,7 @@ class _FindPlaceScreenState extends State<FindPlaceScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+<<<<<<< HEAD
       backgroundColor: const Color(0xFFF4F6FA),
       appBar: AppBar(
         title: const Text(
@@ -411,6 +435,15 @@ class _FindPlaceScreenState extends State<FindPlaceScreen> {
                 ],
               ],
             ),
+=======
+      appBar: AppBar(title: const Text('Find a Place')),
+      body: FlutterMap(
+        options: const MapOptions(center: _center, zoom: 17.0),
+        children: [
+          TileLayer(
+            urlTemplate: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+            subdomains: const ['a', 'b', 'c'],
+>>>>>>> a3f40b13e9b02981a261ad0f3583a28481e0bb01
           ),
           // Map
           Expanded(

@@ -1,5 +1,9 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
+
+import '../screens/admin_panel_screen.dart';
+import '../screens/home_screen.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -18,12 +22,9 @@ class AuthService {
     String fullName,
   ) async {
     try {
-      print('Starting signup process for email: $email');
-
       // First create the user
       UserCredential userCredential = await _auth
           .createUserWithEmailAndPassword(email: email, password: password);
-      print('User created successfully with UID: ${userCredential.user?.uid}');
 
       // Then create the user profile in Firestore
       if (userCredential.user != null) {
@@ -31,13 +32,12 @@ class AuthService {
           'fullName': fullName,
           'email': email,
           'createdAt': FieldValue.serverTimestamp(),
+          'role': 'student',
         });
-        print('User profile created in Firestore');
       }
 
       return userCredential;
     } on FirebaseAuthException catch (e) {
-      print('FirebaseAuthException during signup: ${e.code} - ${e.message}');
       String errorMessage;
       switch (e.code) {
         case 'email-already-in-use':
@@ -60,7 +60,6 @@ class AuthService {
       }
       throw FirebaseAuthException(code: e.code, message: errorMessage);
     } catch (e) {
-      print('Unexpected error during signup: $e');
       throw Exception('An unexpected error occurred during signup: $e');
     }
   }
@@ -71,13 +70,11 @@ class AuthService {
     String password,
   ) async {
     try {
-      print('Attempting to sign in with email: $email');
       return await _auth.signInWithEmailAndPassword(
         email: email,
         password: password,
       );
     } on FirebaseAuthException catch (e) {
-      print('FirebaseAuthException during signin: ${e.code} - ${e.message}');
       String errorMessage;
       switch (e.code) {
         case 'user-not-found':
@@ -99,7 +96,6 @@ class AuthService {
       }
       throw FirebaseAuthException(code: e.code, message: errorMessage);
     } catch (e) {
-      print('Unexpected error during signin: $e');
       throw Exception('An unexpected error occurred during sign in: $e');
     }
   }
@@ -108,14 +104,11 @@ class AuthService {
   Future<DocumentSnapshot> getUserDetails() async {
     User? user = _auth.currentUser;
     if (user == null) {
-      print('getUserDetails: No user is currently logged in');
       throw Exception("User not logged in");
     }
     try {
-      print('Fetching user details for: ${user.uid}');
       return await _firestore.collection('users').doc(user.uid).get();
     } catch (e) {
-      print('Error fetching user details: $e');
       throw Exception('Failed to fetch user details: $e');
     }
   }
@@ -123,11 +116,8 @@ class AuthService {
   // Sign out
   Future<void> signOut() async {
     try {
-      print('Attempting to sign out user');
       await _auth.signOut();
-      print('User signed out successfully');
     } catch (e) {
-      print('Error during sign out: $e');
       throw Exception('Failed to sign out: $e');
     }
   }
@@ -135,12 +125,37 @@ class AuthService {
   // Reset password
   Future<void> resetPassword(String email) async {
     try {
-      print('Attempting to send password reset email to: $email');
       await _auth.sendPasswordResetEmail(email: email);
-      print('Password reset email sent successfully');
     } catch (e) {
-      print('Error sending password reset email: $e');
       throw Exception('Failed to send password reset email: $e');
+    }
+  }
+
+  Future<String?> getUserRole() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return null;
+    final doc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .get();
+    return doc.data()?['role'] as String?;
+  }
+
+  void navigateAfterLogin(BuildContext context) async {
+    final role = await getUserRole();
+
+    if (!context.mounted) return;
+
+    if (role == 'admin') {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const AdminPanelScreen()),
+      );
+    } else {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const HomeScreen()),
+      );
     }
   }
 }
