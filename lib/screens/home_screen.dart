@@ -7,12 +7,9 @@ import 'ask_question_screen.dart';
 import 'checklist_screen.dart';
 import 'campus_updates_screen.dart';
 import 'events_calendar_screen.dart';
-<<<<<<< HEAD
 import 'resources_screen.dart';
 import 'notifications_screen.dart';
-=======
 import 'login_screen.dart';
->>>>>>> a3f40b13e9b02981a261ad0f3583a28481e0bb01
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -23,7 +20,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final AuthService _authService = AuthService();
-  DocumentSnapshot? _userSnapshot;
+  final NotificationService _notificationService = NotificationService();
   int _currentIndex = 0;
 
   final List<Map<String, dynamic>> cards = [
