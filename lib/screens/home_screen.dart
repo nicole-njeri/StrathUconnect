@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
+import '../services/notification_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'find_place_screen.dart';
 import 'ask_question_screen.dart';
 import 'checklist_screen.dart';
 import 'campus_updates_screen.dart';
 import 'events_calendar_screen.dart';
+import 'resources_screen.dart';
+import 'notifications_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -16,13 +19,18 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final AuthService _authService = AuthService();
+  final NotificationService _notificationService = NotificationService();
   DocumentSnapshot? _userSnapshot;
   int _currentIndex = 0;
   bool _isLoading = true;
   String? _error;
 
   final List<Map<String, dynamic>> cards = [
-    {'icon': Icons.place, 'title': 'Find a Place', 'screen': const FindPlaceScreen()},
+    {
+      'icon': Icons.place,
+      'title': 'Find a Place',
+      'screen': const FindPlaceScreen(),
+    },
     {
       'icon': Icons.chat_bubble_outline,
       'title': 'Ask a Question',
@@ -189,35 +197,102 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        onTap: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-          // You can add navigation logic for other tabs here
+      bottomNavigationBar: StreamBuilder<int>(
+        stream: _authService.currentUser != null
+            ? _notificationService.getUnreadCount(_authService.currentUser!.uid)
+            : Stream.value(0),
+        builder: (context, snapshot) {
+          final unreadCount = snapshot.data ?? 0;
+
+          return BottomNavigationBar(
+            currentIndex: _currentIndex,
+            onTap: (index) {
+              setState(() {
+                _currentIndex = index;
+              });
+              // Handle navigation for different tabs
+              if (index == 1) {
+                // Resources tab
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const ResourcesScreen(),
+                  ),
+                );
+                // Reset to home tab after navigation
+                setState(() {
+                  _currentIndex = 0;
+                });
+              } else if (index == 2) {
+                // Notifications tab
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const NotificationsScreen(),
+                  ),
+                );
+                // Reset to home tab after navigation
+                setState(() {
+                  _currentIndex = 0;
+                });
+              }
+              // You can add navigation logic for other tabs here
+            },
+            selectedItemColor: const Color(0xFF0A2B6B),
+            unselectedItemColor: Colors.grey,
+            showUnselectedLabels: true,
+            items: [
+              const BottomNavigationBarItem(
+                icon: Icon(Icons.home),
+                label: 'Home',
+              ),
+              const BottomNavigationBarItem(
+                icon: Icon(Icons.menu_book),
+                label: 'Resources',
+              ),
+              BottomNavigationBarItem(
+                icon: Stack(
+                  children: [
+                    const Icon(Icons.notifications_none),
+                    if (unreadCount > 0)
+                      Positioned(
+                        right: 0,
+                        top: 0,
+                        child: Container(
+                          padding: const EdgeInsets.all(2),
+                          decoration: BoxDecoration(
+                            color: Colors.red,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          constraints: const BoxConstraints(
+                            minWidth: 16,
+                            minHeight: 16,
+                          ),
+                          child: Text(
+                            unreadCount > 99 ? '99+' : unreadCount.toString(),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                label: 'Notifications',
+              ),
+              const BottomNavigationBarItem(
+                icon: Icon(Icons.person_outline),
+                label: 'Profile',
+              ),
+            ],
+            type: BottomNavigationBarType.fixed,
+            backgroundColor: Colors.white,
+            elevation: 8,
+          );
         },
-        selectedItemColor: const Color(0xFF0A2B6B),
-        unselectedItemColor: Colors.grey,
-        showUnselectedLabels: true,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.menu_book),
-            label: 'Resources',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.notifications_none),
-            label: 'Notifications',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            label: 'Profile',
-          ),
-        ],
-        type: BottomNavigationBarType.fixed,
-        backgroundColor: Colors.white,
-        elevation: 8,
       ),
     );
   }
