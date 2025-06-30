@@ -17,10 +17,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final AuthService _authService = AuthService();
-  DocumentSnapshot? _userSnapshot;
   int _currentIndex = 0;
-  bool _isLoading = true;
-  String? _error;
 
   final List<Map<String, dynamic>> cards = [
     {
@@ -49,41 +46,6 @@ class _HomeScreenState extends State<HomeScreen> {
       'screen': const EventsCalendarScreen(),
     },
   ];
-
-  @override
-  void initState() {
-    super.initState();
-    _loadUserData();
-  }
-
-  Future<void> _loadUserData() async {
-    try {
-      final snapshot = await _authService.getUserDetails();
-      if (mounted) {
-        setState(() {
-          _userSnapshot = snapshot;
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _error = "Failed to load user data.";
-          _isLoading = false;
-        });
-      }
-    }
-  }
-
-  String get _userName {
-    if (_userSnapshot != null && _userSnapshot!.exists) {
-      final data = _userSnapshot!.data() as Map<String, dynamic>?;
-      if (data != null && data.containsKey('fullName')) {
-        return data['fullName'].split(' ')[0]; // Just get first name
-      }
-    }
-    return 'User'; // Default name
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -166,60 +128,78 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           // Main content
           Expanded(
-            child: SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16.0,
-                  vertical: 8,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: 16),
-                    Text(
-                      'Hi $_userName 👋',
-                      style: Theme.of(context).textTheme.headlineSmall
-                          ?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: const Color(0xFF0A2B6B),
-                          ),
+            child: FutureBuilder<DocumentSnapshot>(
+              future: _authService.getUserDetails(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (snapshot.hasError) {
+                  return const Center(child: Text("Error loading user data."));
+                }
+                if (!snapshot.hasData || !snapshot.data!.exists) {
+                  return const Center(child: Text("Could not find user data."));
+                }
+
+                final userData = snapshot.data!.data() as Map<String, dynamic>?;
+                final userName = userData?['fullName']?.split(' ')[0] ?? 'User';
+
+                return SingleChildScrollView(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16.0,
+                      vertical: 8,
                     ),
-                    const SizedBox(height: 16),
-                    ...cards.map(
-                      (card) => Padding(
-                        padding: const EdgeInsets.only(bottom: 16.0),
-                        child: Card(
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          elevation: 2,
-                          child: ListTile(
-                            leading: Icon(
-                              card['icon'],
-                              color: const Color(0xFF0A2B6B),
-                              size: 32,
-                            ),
-                            title: Text(
-                              card['title'],
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w600,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 16),
+                        Text(
+                          'Hi $userName 👋',
+                          style: Theme.of(context).textTheme.headlineSmall
+                              ?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xFF0A2B6B),
+                              ),
+                        ),
+                        const SizedBox(height: 16),
+                        ...cards.map(
+                          (card) => Padding(
+                            padding: const EdgeInsets.only(bottom: 16.0),
+                            child: Card(
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              elevation: 2,
+                              child: ListTile(
+                                leading: Icon(
+                                  card['icon'],
+                                  color: const Color(0xFF0A2B6B),
+                                  size: 32,
+                                ),
+                                title: Text(
+                                  card['title'],
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => card['screen'],
+                                    ),
+                                  );
+                                },
                               ),
                             ),
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => card['screen'],
-                                ),
-                              );
-                            },
                           ),
                         ),
-                      ),
+                      ],
                     ),
-                  ],
-                ),
-              ),
+                  ),
+                );
+              },
             ),
           ),
         ],

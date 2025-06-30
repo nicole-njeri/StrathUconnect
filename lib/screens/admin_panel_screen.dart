@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:strathapp/screens/admin/user_management_screen.dart';
 import 'package:strathapp/services/auth_service.dart';
 import 'package:strathapp/screens/login_screen.dart';
 
@@ -101,7 +102,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
   Widget build(BuildContext context) {
     final List<Widget> pages = [
       const _DashboardScreen(),
-      const _PlaceholderScreen(title: 'User Management'),
+      const UserManagementScreen(),
       const _PlaceholderScreen(title: 'Manage Locations'),
       const _PlaceholderScreen(title: 'Manage Events'),
       const _PlaceholderScreen(title: 'Forum Moderation'),
