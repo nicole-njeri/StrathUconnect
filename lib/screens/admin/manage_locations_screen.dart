@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_map/flutter_map.dart';
-import 'package:latlong2/latlong.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'dart:convert';
+import 'package:latlong2/latlong.dart';
+import 'package:flutter_map/flutter_map.dart';
 
 class ManageLocationsScreen extends StatefulWidget {
   const ManageLocationsScreen({super.key});
@@ -12,145 +11,176 @@ class ManageLocationsScreen extends StatefulWidget {
 }
 
 class _ManageLocationsScreenState extends State<ManageLocationsScreen> {
-  static const LatLng _center = LatLng(-1.3094, 36.8148);
-  String _searchQuery = '';
-  Map<String, dynamic>? _selectedLocation;
-  LatLng? _selectedLatLng;
+  String? _previewLocationId;
+  LatLng? _previewLatLng;
 
-  // Route drawing state (optional for admin, but kept for UI parity)
-  Map<String, dynamic>? _startLocation;
-  Map<String, dynamic>? _endLocation;
-  LatLng? _startLatLng;
-  LatLng? _endLatLng;
-  List<LatLng> _routePoints = [];
-  bool _isLoadingRoute = false;
-  String? _routeError;
-
-  void _selectLocation(Map<String, dynamic> data, LatLng latLng) {
-    setState(() {
-      _selectedLocation = data;
-      _selectedLatLng = latLng;
-    });
+  void _showPreviewOnMap(Map<String, dynamic> location) {
+    if (location['coordinates'] is GeoPoint) {
+      final geo = location['coordinates'] as GeoPoint;
+      setState(() {
+        _previewLocationId = location['locationName'];
+        _previewLatLng = LatLng(geo.latitude, geo.longitude);
+      });
+    }
   }
 
-  void _showAddEditDialog({Map<String, dynamic>? location, String? docId}) {
+  void _showAddEditLocationForm({DocumentSnapshot? doc}) {
+    final isEdit = doc != null;
+    final data = doc?.data() as Map<String, dynamic>? ?? {};
     final nameController = TextEditingController(
-      text: location?['locationName'] ?? '',
+      text: data['locationName'] ?? '',
     );
-    final typeController = TextEditingController(text: location?['type'] ?? '');
-    final descController = TextEditingController(
-      text: location?['description'] ?? '',
-    );
+    final typeController = TextEditingController(text: data['type'] ?? '');
     final latController = TextEditingController(
-      text: location?['coordinates']?.latitude?.toString() ?? '',
+      text: data['coordinates'] is GeoPoint
+          ? (data['coordinates'] as GeoPoint).latitude.toString()
+          : '',
     );
     final lngController = TextEditingController(
-      text: location?['coordinates']?.longitude?.toString() ?? '',
+      text: data['coordinates'] is GeoPoint
+          ? (data['coordinates'] as GeoPoint).longitude.toString()
+          : '',
     );
-    showDialog(
+    final descController = TextEditingController(
+      text: data['description'] ?? '',
+    );
+    final imagesController = TextEditingController(
+      text: (data['imageURLs'] as List?)?.join(', ') ?? '',
+    );
+
+    showModalBottomSheet(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(location == null ? 'Add Location' : 'Edit Location'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+      isScrollControlled: true,
+      builder: (context) {
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+            left: 20,
+            right: 20,
+            top: 20,
+          ),
+          child: Wrap(
             children: [
+              Text(
+                isEdit ? 'Edit Location' : 'Add Location',
+                style: Theme.of(context).textTheme.headlineSmall,
+              ),
+              const SizedBox(height: 16),
               TextField(
                 controller: nameController,
-                decoration: const InputDecoration(labelText: 'Name'),
+                decoration: const InputDecoration(labelText: 'Location Name'),
               ),
+              const SizedBox(height: 10),
               TextField(
                 controller: typeController,
-                decoration: const InputDecoration(labelText: 'Type'),
+                decoration: const InputDecoration(
+                  labelText: 'Type (e.g., building, lab)',
+                ),
               ),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: latController,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(labelText: 'Latitude'),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: TextField(
+                      controller: lngController,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(labelText: 'Longitude'),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
               TextField(
                 controller: descController,
                 decoration: const InputDecoration(labelText: 'Description'),
+                maxLines: 2,
               ),
+              const SizedBox(height: 10),
               TextField(
-                controller: latController,
-                decoration: const InputDecoration(labelText: 'Latitude'),
-                keyboardType: TextInputType.number,
+                controller: imagesController,
+                decoration: const InputDecoration(
+                  labelText: 'Image URLs (comma separated)',
+                ),
               ),
-              TextField(
-                controller: lngController,
-                decoration: const InputDecoration(labelText: 'Longitude'),
-                keyboardType: TextInputType.number,
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: () async {
+                  final name = nameController.text.trim();
+                  final type = typeController.text.trim();
+                  final lat = double.tryParse(latController.text.trim());
+                  final lng = double.tryParse(lngController.text.trim());
+                  final desc = descController.text.trim();
+                  final images = imagesController.text
+                      .split(',')
+                      .map((e) => e.trim())
+                      .where((e) => e.isNotEmpty)
+                      .toList();
+                  if (name.isEmpty ||
+                      type.isEmpty ||
+                      lat == null ||
+                      lng == null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Please fill all required fields.'),
+                      ),
+                    );
+                    return;
+                  }
+                  final data = {
+                    'locationName': name,
+                    'type': type,
+                    'coordinates': GeoPoint(lat, lng),
+                    'description': desc,
+                    'imageURLs': images,
+                  };
+                  try {
+                    if (isEdit) {
+                      await doc.reference.update(data);
+                    } else {
+                      await FirebaseFirestore.instance
+                          .collection('campusLocations')
+                          .add(data);
+                    }
+                    if (mounted) Navigator.of(context).pop();
+                  } catch (e) {
+                    ScaffoldMessenger.of(
+                      context,
+                    ).showSnackBar(SnackBar(content: Text('Failed: $e')));
+                  }
+                },
+                child: Text(isEdit ? 'Update Location' : 'Add Location'),
               ),
+              const SizedBox(height: 20),
             ],
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              final name = nameController.text.trim();
-              final type = typeController.text.trim();
-              final desc = descController.text.trim();
-              final lat = double.tryParse(latController.text.trim());
-              final lng = double.tryParse(lngController.text.trim());
-              if (name.isEmpty || type.isEmpty || lat == null || lng == null)
-                return;
-              final data = {
-                'locationName': name,
-                'type': type,
-                'description': desc,
-                'coordinates': GeoPoint(lat, lng),
-              };
-              if (docId == null) {
-                await FirebaseFirestore.instance
-                    .collection('campusLocations')
-                    .add(data);
-              } else {
-                await FirebaseFirestore.instance
-                    .collection('campusLocations')
-                    .doc(docId)
-                    .update(data);
-              }
-              if (mounted) Navigator.pop(context);
-            },
-            child: Text(location == null ? 'Add' : 'Save'),
-          ),
-        ],
-      ),
+        );
+      },
     );
-  }
-
-  void _deleteLocation(String docId) async {
-    await FirebaseFirestore.instance
-        .collection('campusLocations')
-        .doc(docId)
-        .delete();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Manage Locations')),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _showAddEditDialog(),
-        child: const Icon(Icons.add),
-        tooltip: 'Add Location',
+      backgroundColor: const Color(0xFFF6EEDD),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => _showAddEditLocationForm(),
+        icon: const Icon(Icons.add),
+        label: const Text('Add Location'),
+        backgroundColor: const Color(0xFF003399),
       ),
-      body: Column(
+      body: Row(
         children: [
-          Padding(
-            padding: const EdgeInsets.all(12.0),
-            child: TextField(
-              decoration: const InputDecoration(
-                hintText: 'Search by name or type...',
-              ),
-              onChanged: (value) {
-                setState(() {
-                  _searchQuery = value.trim().toLowerCase();
-                });
-              },
-            ),
-          ),
+          // Locations List
           Expanded(
+            flex: 2,
             child: StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance
                   .collection('campusLocations')
@@ -165,155 +195,97 @@ class _ManageLocationsScreenState extends State<ManageLocationsScreen> {
                 if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
                   return const Center(child: Text('No locations found.'));
                 }
-                final locations = snapshot.data!.docs.where((doc) {
-                  final data = doc.data() as Map<String, dynamic>;
-                  final name = (data['locationName'] ?? '')
-                      .toString()
-                      .toLowerCase();
-                  final type = (data['type'] ?? '').toString().toLowerCase();
-                  return name.contains(_searchQuery) ||
-                      type.contains(_searchQuery);
-                }).toList();
-                return Row(
-                  children: [
-                    Expanded(
-                      flex: 2,
-                      child: ListView.separated(
-                        padding: const EdgeInsets.all(12),
-                        itemCount: locations.length,
-                        separatorBuilder: (context, i) =>
-                            const SizedBox(height: 10),
-                        itemBuilder: (context, index) {
-                          final doc = locations[index];
-                          final data = doc.data() as Map<String, dynamic>;
-                          final geo = data['coordinates'] as GeoPoint?;
-                          final latLng = geo != null
-                              ? LatLng(geo.latitude, geo.longitude)
-                              : null;
-                          return Card(
-                            elevation: 2,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: ListTile(
-                              title: Text(
-                                data['locationName'] ?? '',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              subtitle: Text(
-                                '${data['type'] ?? ''}\n${data['description'] ?? ''}',
-                              ),
-                              isThreeLine: true,
-                              onTap: latLng != null
-                                  ? () => _selectLocation(data, latLng)
-                                  : null,
-                              trailing: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  IconButton(
-                                    icon: const Icon(
-                                      Icons.edit,
-                                      color: Colors.blue,
-                                    ),
-                                    onPressed: () => _showAddEditDialog(
-                                      location: data,
-                                      docId: doc.id,
-                                    ),
-                                    tooltip: 'Edit',
-                                  ),
-                                  IconButton(
-                                    icon: const Icon(
-                                      Icons.delete,
-                                      color: Colors.red,
-                                    ),
-                                    onPressed: () => _deleteLocation(doc.id),
-                                    tooltip: 'Delete',
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        },
+                final locations = snapshot.data!.docs;
+                return ListView.separated(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: locations.length,
+                  separatorBuilder: (context, i) => const SizedBox(height: 12),
+                  itemBuilder: (context, index) {
+                    final doc = locations[index];
+                    final data = doc.data() as Map<String, dynamic>;
+                    return Card(
+                      elevation: 2,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
                       ),
-                    ),
-                    Expanded(
-                      flex: 3,
-                      child: Padding(
-                        padding: const EdgeInsets.all(12.0),
-                        child: Card(
-                          elevation: 3,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(16),
-                            child: FlutterMap(
-                              options: MapOptions(
-                                center: _selectedLatLng ?? _center,
-                                zoom: 17.0,
-                              ),
-                              children: [
-                                TileLayer(
-                                  urlTemplate:
-                                      'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-                                  subdomains: const ['a', 'b', 'c'],
-                                ),
-                                if (_selectedLatLng != null)
-                                  MarkerLayer(
-                                    markers: [
-                                      Marker(
-                                        width: 80.0,
-                                        height: 80.0,
-                                        point: _selectedLatLng!,
-                                        child: const Icon(
-                                          Icons.location_on,
-                                          color: Colors.red,
-                                          size: 40,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                              ],
+                      child: ListTile(
+                        title: Text(
+                          data['locationName'] ?? '',
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        subtitle: Text(
+                          '${data['type'] ?? ''}\n${data['description'] ?? ''}',
+                        ),
+                        isThreeLine: true,
+                        trailing: PopupMenuButton<String>(
+                          onSelected: (value) async {
+                            if (value == 'edit') {
+                              _showAddEditLocationForm(doc: doc);
+                            } else if (value == 'delete') {
+                              await doc.reference.delete();
+                            } else if (value == 'preview') {
+                              _showPreviewOnMap(data);
+                            }
+                          },
+                          itemBuilder: (context) => [
+                            const PopupMenuItem(
+                              value: 'edit',
+                              child: Text('Edit'),
                             ),
-                          ),
+                            const PopupMenuItem(
+                              value: 'delete',
+                              child: Text('Delete'),
+                            ),
+                            const PopupMenuItem(
+                              value: 'preview',
+                              child: Text('Preview on Map'),
+                            ),
+                          ],
                         ),
                       ),
-                    ),
-                  ],
+                    );
+                  },
                 );
               },
             ),
           ),
-          if (_selectedLocation != null)
-            Padding(
-              padding: const EdgeInsets.all(12.0),
-              child: Card(
-                elevation: 2,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        _selectedLocation!['locationName'] ?? '',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18,
+          // Map Preview
+          if (_previewLatLng != null)
+            Expanded(
+              flex: 3,
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Card(
+                  elevation: 3,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: FlutterMap(
+                      options: MapOptions(center: _previewLatLng, zoom: 17.0),
+                      children: [
+                        TileLayer(
+                          urlTemplate:
+                              'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                          subdomains: const ['a', 'b', 'c'],
                         ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        _selectedLocation!['type'] ?? '',
-                        style: const TextStyle(color: Colors.grey),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(_selectedLocation!['description'] ?? ''),
-                    ],
+                        MarkerLayer(
+                          markers: [
+                            Marker(
+                              width: 80.0,
+                              height: 80.0,
+                              point: _previewLatLng!,
+                              child: const Icon(
+                                Icons.location_on,
+                                color: Colors.red,
+                                size: 40,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
