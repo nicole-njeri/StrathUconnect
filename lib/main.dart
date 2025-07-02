@@ -20,30 +20,39 @@ class StrathUConnectApp extends StatelessWidget {
       title: 'StrathUConnect',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(primarySwatch: Colors.red, fontFamily: 'Poppins'),
-      home: StreamBuilder<User?>(
-        stream: FirebaseAuth.instance.authStateChanges(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Scaffold(
-              body: Center(child: CircularProgressIndicator()),
-            );
-          }
+      home: const AuthGate(),
+    );
+  }
+}
 
-          if (snapshot.hasError) {
-            return Scaffold(
-              body: Center(child: Text("An error occurred: ${snapshot.error}")),
-            );
-          }
+class AuthGate extends StatelessWidget {
+  const AuthGate({super.key});
 
-          if (snapshot.hasData) {
-            // User is authenticated, let the AuthWrapper decide where to go.
-            return const AuthWrapper();
-          }
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<User?>(
+      stream: FirebaseAuth.instance.authStateChanges(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
 
-          // User is not authenticated.
+        if (snapshot.hasError) {
+          return Scaffold(
+            body: Center(child: Text("An error occurred: ${snapshot.error}")),
+          );
+        }
+
+        if (snapshot.hasData && snapshot.data != null) {
+          // User is signed in, show AuthWrapper to handle role-based navigation
+          return const AuthWrapper();
+        } else {
+          // Not signed in
           return const LoginScreen();
-        },
-      ),
+        }
+      },
     );
   }
 }

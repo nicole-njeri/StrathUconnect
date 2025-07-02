@@ -158,8 +158,9 @@ class _UserDetailScreenState extends State<UserDetailScreen> {
                         .doc(widget.userId)
                         .get(),
                     builder: (context, adminSnapshot) {
-                      if (!adminSnapshot.hasData)
+                      if (!adminSnapshot.hasData) {
                         return const SizedBox.shrink();
+                      }
                       final adminData =
                           adminSnapshot.data!.data() as Map<String, dynamic>?;
                       return ListTile(

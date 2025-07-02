@@ -3,41 +3,32 @@ import 'package:strathapp/screens/admin_panel_screen.dart';
 import 'package:strathapp/screens/home_screen.dart';
 import 'package:strathapp/services/auth_service.dart';
 
-class AuthWrapper extends StatefulWidget {
+class AuthWrapper extends StatelessWidget {
   const AuthWrapper({super.key});
 
   @override
-  State<AuthWrapper> createState() => _AuthWrapperState();
-}
-
-class _AuthWrapperState extends State<AuthWrapper> {
-  final AuthService _authService = AuthService();
-
-  @override
-  void initState() {
-    super.initState();
-    _redirectUser();
-  }
-
-  Future<void> _redirectUser() async {
-    final role = await _authService.getUserRole();
-
-    if (!mounted) return;
-
-    if (role == 'admin') {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const AdminPanelScreen()),
-      );
-    } else {
-      Navigator.of(
-        context,
-      ).pushReplacement(MaterialPageRoute(builder: (_) => const HomeScreen()));
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
-    // Show a loading indicator while we determine the user's role
-    return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    final AuthService authService = AuthService();
+    return FutureBuilder<String?>(
+      future: authService.getUserRole(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+        if (snapshot.hasError) {
+          return Scaffold(
+            body: Center(child: Text('Error: \\${snapshot.error}')),
+          );
+        }
+        final role = snapshot.data;
+        if (role == 'admin') {
+          return const AdminPanelScreen();
+        } else {
+          return const HomeScreen();
+        }
+      },
+    );
   }
 }

@@ -158,4 +158,16 @@ class AuthService {
       );
     }
   }
+
+  // Get admin full name
+  Future<String?> getUserFullName() async {
+    User? user = _auth.currentUser;
+    if (user == null) return null;
+    try {
+      final doc = await _firestore.collection('users').doc(user.uid).get();
+      return doc.data()?['fullName'] as String?;
+    } catch (e) {
+      return null;
+    }
+  }
 }
