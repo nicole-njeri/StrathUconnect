@@ -55,19 +55,20 @@ class _ChecklistScreenState extends State<ChecklistScreen> {
                   icon: const Icon(Icons.arrow_back),
                   onPressed: () => Navigator.pop(context),
                 ),
-                backgroundColor: const Color(0xFF1A3C7C),
+                backgroundColor: const Color(0xFF0A2B6B),
+                elevation: 0,
               ),
+              backgroundColor: const Color(0xFFF6EEDD),
               body: SingleChildScrollView(
                 padding: const EdgeInsets.all(16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Progress Card
-                    Card(
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
+                    Material(
                       elevation: 2,
+                      borderRadius: BorderRadius.circular(16),
+                      color: Colors.white,
                       child: Padding(
                         padding: const EdgeInsets.all(16),
                         child: Column(
@@ -78,6 +79,7 @@ class _ChecklistScreenState extends State<ChecklistScreen> {
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 18,
+                                color: Color(0xFF0A2B6B),
                               ),
                             ),
                             const SizedBox(height: 8),
@@ -85,7 +87,7 @@ class _ChecklistScreenState extends State<ChecklistScreen> {
                               value: progress,
                               backgroundColor: Colors.grey[300],
                               valueColor: const AlwaysStoppedAnimation<Color>(
-                                Color(0xFF1A3C7C),
+                                Color(0xFF0A2B6B),
                               ),
                             ),
                             const SizedBox(height: 8),
@@ -112,6 +114,7 @@ class _ChecklistScreenState extends State<ChecklistScreen> {
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 18,
+                          color: Color(0xFF0A2B6B),
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -119,40 +122,49 @@ class _ChecklistScreenState extends State<ChecklistScreen> {
                         final index = entry.key;
                         final task = entry.value;
                         final isCompleted = completedIndexes.contains(index);
-                        return Card(
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          elevation: 1,
-                          child: CheckboxListTile(
-                            title: Text(
-                              task['description'] ?? '',
-                              style: TextStyle(
-                                decoration: isCompleted
-                                    ? TextDecoration.lineThrough
-                                    : null,
-                                color: isCompleted ? Colors.grey : null,
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: Material(
+                            elevation: 1,
+                            borderRadius: BorderRadius.circular(12),
+                            color: Colors.white,
+                            child: CheckboxListTile(
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
                               ),
+                              title: Text(
+                                task['description'] ?? '',
+                                style: TextStyle(
+                                  decoration: isCompleted
+                                      ? TextDecoration.lineThrough
+                                      : null,
+                                  color: isCompleted ? Colors.grey : Color(0xFF0A2B6B),
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              value: isCompleted,
+                              onChanged: (value) async {
+                                final newIndexes = List<int>.from(
+                                  completedIndexes,
+                                );
+                                if (value == true &&
+                                    !newIndexes.contains(index)) {
+                                  newIndexes.add(index);
+                                } else if (value == false &&
+                                    newIndexes.contains(index)) {
+                                  newIndexes.remove(index);
+                                }
+                                await _db.setStudentChecklistProgress(
+                                  user!.uid,
+                                  newIndexes,
+                                );
+                                setState(() {});
+                              },
+                              controlAffinity: ListTileControlAffinity.leading,
+                              activeColor: const Color(0xFF0A2B6B),
+                              checkColor: Colors.white,
+                              tileColor: Colors.white,
                             ),
-                            value: isCompleted,
-                            onChanged: (value) async {
-                              final newIndexes = List<int>.from(
-                                completedIndexes,
-                              );
-                              if (value == true &&
-                                  !newIndexes.contains(index)) {
-                                newIndexes.add(index);
-                              } else if (value == false &&
-                                  newIndexes.contains(index)) {
-                                newIndexes.remove(index);
-                              }
-                              await _db.setStudentChecklistProgress(
-                                user!.uid,
-                                newIndexes,
-                              );
-                              setState(() {});
-                            },
-                            controlAffinity: ListTileControlAffinity.leading,
                           ),
                         );
                       }),
