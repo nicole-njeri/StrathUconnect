@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../services/auth_service.dart';
 import 'question_detail_screen.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class AskQuestionScreen extends StatefulWidget {
   const AskQuestionScreen({super.key});
@@ -48,6 +49,7 @@ class _AskQuestionScreenState extends State<AskQuestionScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final currentUser = FirebaseAuth.instance.currentUser;
     return Scaffold(
       appBar: AppBar(
         backgroundColor: const Color(0xFF0A2B6B),
@@ -124,7 +126,15 @@ class _AskQuestionScreenState extends State<AskQuestionScreen> {
                     separatorBuilder: (context, i) =>
                         const SizedBox(height: 16),
                     itemBuilder: (context, i) {
-                      final data = docs[i].data() as Map<String, dynamic>;
+                      final doc = docs[i];
+                      final data = doc.data() as Map<String, dynamic>;
+                      final likes = List<String>.from(data['likes'] ?? []);
+                      final dislikes = List<String>.from(
+                        data['dislikes'] ?? [],
+                      );
+                      final userEmail = currentUser?.email ?? '';
+                      final userLiked = likes.contains(userEmail);
+                      final userDisliked = dislikes.contains(userEmail);
                       return Material(
                         elevation: 2,
                         borderRadius: BorderRadius.circular(16),
@@ -136,7 +146,7 @@ class _AskQuestionScreenState extends State<AskQuestionScreen> {
                               context,
                               MaterialPageRoute(
                                 builder: (context) => QuestionDetailScreen(
-                                  questionId: docs[i].id,
+                                  questionId: doc.id,
                                   questionText: data['question'] ?? '',
                                   askedBy: data['userEmail'] ?? 'Anonymous',
                                   timestamp:
@@ -185,6 +195,100 @@ class _AskQuestionScreenState extends State<AskQuestionScreen> {
                                             ),
                                           )
                                         : const SizedBox(),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                Row(
+                                  children: [
+                                    // Like button
+                                    IconButton(
+                                      icon: Icon(
+                                        Icons.thumb_up,
+                                        color: userLiked
+                                            ? Colors.blue
+                                            : Colors.grey,
+                                        size: 20,
+                                      ),
+                                      onPressed: () async {
+                                        final ref = FirebaseFirestore.instance
+                                            .collection('questions')
+                                            .doc(doc.id);
+                                        if (userLiked) {
+                                          await ref.update({
+                                            'likes': FieldValue.arrayRemove([
+                                              userEmail,
+                                            ]),
+                                          });
+                                        } else {
+                                          await ref.update({
+                                            'likes': FieldValue.arrayUnion([
+                                              userEmail,
+                                            ]),
+                                            'dislikes': FieldValue.arrayRemove([
+                                              userEmail,
+                                            ]),
+                                          });
+                                        }
+                                      },
+                                    ),
+                                    Text('${likes.length}'),
+                                    // Dislike button
+                                    IconButton(
+                                      icon: Icon(
+                                        Icons.thumb_down,
+                                        color: userDisliked
+                                            ? Colors.red
+                                            : Colors.grey,
+                                        size: 20,
+                                      ),
+                                      onPressed: () async {
+                                        final ref = FirebaseFirestore.instance
+                                            .collection('questions')
+                                            .doc(doc.id);
+                                        if (userDisliked) {
+                                          await ref.update({
+                                            'dislikes': FieldValue.arrayRemove([
+                                              userEmail,
+                                            ]),
+                                          });
+                                        } else {
+                                          await ref.update({
+                                            'dislikes': FieldValue.arrayUnion([
+                                              userEmail,
+                                            ]),
+                                            'likes': FieldValue.arrayRemove([
+                                              userEmail,
+                                            ]),
+                                          });
+                                        }
+                                      },
+                                    ),
+                                    Text('${dislikes.length}'),
+                                    const SizedBox(width: 8),
+                                    // Answer count
+                                    FutureBuilder<QuerySnapshot>(
+                                      future: FirebaseFirestore.instance
+                                          .collection('questions')
+                                          .doc(doc.id)
+                                          .collection('answers')
+                                          .get(),
+                                      builder: (context, answerSnapshot) {
+                                        final count =
+                                            answerSnapshot.data?.docs.length ??
+                                            0;
+                                        return Row(
+                                          children: [
+                                            const Icon(
+                                              Icons.comment,
+                                              color: Colors.grey,
+                                              size: 20,
+                                            ),
+                                            const SizedBox(width: 2),
+                                            Text('$count'),
+                                          ],
+                                        );
+                                      },
+                                    ),
                                   ],
                                 ),
                               ],
