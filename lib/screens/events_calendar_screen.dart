@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:intl/intl.dart';
 
 class EventsCalendarScreen extends StatefulWidget {
   const EventsCalendarScreen({super.key});
@@ -65,25 +67,64 @@ class _EventsCalendarScreenState extends State<EventsCalendarScreen> {
         elevation: 0,
       ),
       backgroundColor: const Color(0xFFF6EEDD),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              "Upcoming Events",
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 20,
-                color: Color(0xFF0A2B6B),
-              ),
+      body: StreamBuilder<QuerySnapshot>(
+        stream: FirebaseFirestore.instance
+            .collection('campusEvents')
+            .orderBy('eventDate')
+            .snapshots(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (snapshot.hasError) {
+            return Center(child: Text('Error: \\${snapshot.error}'));
+          }
+          final events = snapshot.data?.docs ?? [];
+          if (events.isEmpty) {
+            return const Center(child: Text('No events found.'));
+          }
+          // Group events by week
+          final now = DateTime.now();
+          final thisWeek = <Map<String, dynamic>>[];
+          final upcoming = <Map<String, dynamic>>[];
+          final campusLife = <Map<String, dynamic>>[];
+          for (final doc in events) {
+            final data = doc.data() as Map<String, dynamic>;
+            final eventDate = (data['eventDate'] as Timestamp?)?.toDate();
+            if (eventDate == null) continue;
+            final daysDiff = eventDate.difference(now).inDays;
+            if (daysDiff >= 0 && daysDiff <= 7) {
+              thisWeek.add(data);
+            } else if (daysDiff > 7 && daysDiff <= 30) {
+              upcoming.add(data);
+            } else if (daysDiff > 30) {
+              campusLife.add(data);
+            }
+          }
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  "Upcoming Events",
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 20,
+                    color: Color(0xFF0A2B6B),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                if (thisWeek.isNotEmpty)
+                  _buildSection("This Week's Events", thisWeek),
+                if (upcoming.isNotEmpty)
+                  _buildSection('Upcoming Workshops', upcoming),
+                if (campusLife.isNotEmpty)
+                  _buildSection('Campus Life', campusLife),
+              ],
             ),
-            const SizedBox(height: 20),
-            ...eventSections.map(
-              (section) => _buildSection(section['title'], section['events']),
-            ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
@@ -122,7 +163,7 @@ class _EventsCalendarScreenState extends State<EventsCalendarScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                event['name'],
+                                event['eventName'] ?? event['name'] ?? '',
                                 style: const TextStyle(
                                   fontWeight: FontWeight.w600,
                                   fontSize: 15,
@@ -131,12 +172,28 @@ class _EventsCalendarScreenState extends State<EventsCalendarScreen> {
                               ),
                               const SizedBox(height: 2),
                               Text(
-                                '${event['date']} · ${event['location']}',
+                                _formatEventDate(event['eventDate']) +
+                                    '  b7 ' +
+                                    (event['locationID'] ??
+                                        event['location'] ??
+                                        ''),
                                 style: const TextStyle(
                                   color: Colors.black54,
                                   fontSize: 13,
                                 ),
                               ),
+                              if (event['description'] != null &&
+                                  (event['description'] as String).isNotEmpty)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 4.0),
+                                  child: Text(
+                                    event['description'],
+                                    style: const TextStyle(
+                                      color: Colors.black87,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ),
                             ],
                           ),
                         ),
@@ -151,5 +208,16 @@ class _EventsCalendarScreenState extends State<EventsCalendarScreen> {
         const SizedBox(height: 20),
       ],
     );
+  }
+
+  String _formatEventDate(dynamic eventDate) {
+    if (eventDate is Timestamp) {
+      return DateFormat('EEE, d MMM').format(eventDate.toDate());
+    } else if (eventDate is DateTime) {
+      return DateFormat('EEE, d MMM').format(eventDate);
+    } else if (eventDate is String) {
+      return eventDate;
+    }
+    return '';
   }
 }
