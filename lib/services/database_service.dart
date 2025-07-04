@@ -1464,4 +1464,35 @@ class DatabaseService {
     }
     await batch.commit();
   }
+
+  // --- Onboarding Checklist (Shared Template Model) ---
+  Future<Map<String, dynamic>?> getActiveChecklistTemplate() async {
+    final snapshot = await _firestore
+        .collection('checklistTemplates')
+        .where('isActive', isEqualTo: true)
+        .limit(1)
+        .get();
+    if (snapshot.docs.isEmpty) return null;
+    return {'id': snapshot.docs.first.id, ...snapshot.docs.first.data()};
+  }
+
+  Future<List<int>> getStudentChecklistProgress(String studentId) async {
+    final doc = await _firestore
+        .collection('onboardingProgress')
+        .doc(studentId)
+        .get();
+    if (!doc.exists) return [];
+    final data = doc.data();
+    return List<int>.from(data?['completedTaskIndexes'] ?? []);
+  }
+
+  Future<void> setStudentChecklistProgress(
+    String studentId,
+    List<int> completedTaskIndexes,
+  ) async {
+    await _firestore.collection('onboardingProgress').doc(studentId).set({
+      'completedTaskIndexes': completedTaskIndexes,
+      'lastUpdated': FieldValue.serverTimestamp(),
+    });
+  }
 }
