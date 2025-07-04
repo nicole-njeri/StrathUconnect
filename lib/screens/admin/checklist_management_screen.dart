@@ -68,29 +68,7 @@ class _ChecklistManagementScreenState extends State<ChecklistManagementScreen> {
       length: 2,
       child: Scaffold(
         appBar: AppBar(
-          title: Row(
-            children: [
-              // If you have a logo, add it here, e.g.:
-              // SizedBox(
-              //   height: 32,
-              //   child: Padding(
-              //     padding: EdgeInsets.only(right: 8),
-              //     child: StrathmoreLogo(size: 28),
-              //   ),
-              // ),
-              Flexible(
-                child: Text(
-                  'Onboarding Checklists',
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 20,
-                  ),
-                ),
-              ),
-            ],
-          ),
+          title: const Text('Onboarding Checklists'),
           bottom: const TabBar(
             tabs: [
               Tab(text: 'Templates'),
@@ -165,20 +143,17 @@ class _ChecklistManagementScreenState extends State<ChecklistManagementScreen> {
                   ),
                 ),
                 if (isActive)
-                  Padding(
-                    padding: const EdgeInsets.only(right: 8.0),
+                  const Padding(
+                    padding: EdgeInsets.only(right: 8.0),
                     child: Chip(
-                      label: const Text(
+                      label: Text(
                         'Active',
                         style: TextStyle(color: Colors.white, fontSize: 12),
                       ),
                       backgroundColor: Colors.green,
                       visualDensity: VisualDensity.compact,
                       materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 0,
-                      ),
+                      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 0),
                     ),
                   ),
                 PopupMenuButton<String>(
