@@ -14,6 +14,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'dart:io';
 import 'package:strathapp/widgets/auth_wrapper.dart';
+import 'package:strathapp/screens/login_screen.dart';
 
 class AdminPanelScreen extends StatefulWidget {
   const AdminPanelScreen({super.key});
@@ -212,7 +213,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
                 if (mounted) {
                   Navigator.of(context).pop(); // Remove loading dialog
                   Navigator.of(context).pushAndRemoveUntil(
-                    MaterialPageRoute(builder: (_) => const AuthWrapper()),
+                    MaterialPageRoute(builder: (_) => const LoginScreen()),
                     (route) => false,
                   );
                 }
@@ -618,7 +619,8 @@ class ManageEventsScreen extends StatelessWidget {
                   itemCount: events.length,
                   separatorBuilder: (context, i) => const SizedBox(height: 16),
                   itemBuilder: (context, index) {
-                    final event = events[index].data() as Map<String, dynamic>;
+                    final doc = events[index];
+                    final event = doc.data() as Map<String, dynamic>;
                     final eventName = event['eventName'] ?? 'Untitled';
                     final description = event['description'] ?? '';
                     final eventDate = (event['eventDate'] as Timestamp?)
@@ -638,12 +640,77 @@ class ManageEventsScreen extends StatelessWidget {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                eventName,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 18,
-                                ),
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      eventName,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 18,
+                                      ),
+                                    ),
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(
+                                      Icons.edit,
+                                      color: Colors.blue,
+                                    ),
+                                    tooltip: 'Edit',
+                                    onPressed: () async {
+                                      await showDialog(
+                                        context: context,
+                                        builder: (context) => _EditEventDialog(
+                                          docId: doc.id,
+                                          event: event,
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(
+                                      Icons.delete,
+                                      color: Colors.red,
+                                    ),
+                                    tooltip: 'Delete',
+                                    onPressed: () async {
+                                      final confirm = await showDialog<bool>(
+                                        context: context,
+                                        builder: (context) => AlertDialog(
+                                          title: const Text('Delete Event'),
+                                          content: const Text(
+                                            'Are you sure you want to delete this event?',
+                                          ),
+                                          actions: [
+                                            TextButton(
+                                              onPressed: () =>
+                                                  Navigator.pop(context, false),
+                                              child: const Text('Cancel'),
+                                            ),
+                                            TextButton(
+                                              onPressed: () =>
+                                                  Navigator.pop(context, true),
+                                              child: const Text(
+                                                'Delete',
+                                                style: TextStyle(
+                                                  color: Colors.red,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                      if (confirm == true) {
+                                        await FirebaseFirestore.instance
+                                            .collection('campusEvents')
+                                            .doc(doc.id)
+                                            .delete();
+                                      }
+                                    },
+                                  ),
+                                ],
                               ),
                               const SizedBox(height: 8),
                               Text(description),
@@ -651,9 +718,9 @@ class ManageEventsScreen extends StatelessWidget {
                               Text(
                                 'Date: \\${eventDate != null ? eventDate.toLocal().toString().split(' ')[0] : 'N/A'}',
                               ),
-                              Text('Time: \\$eventTime'),
-                              Text('Location: \\$locationID'),
-                              Text('Organizer: \\$organizer'),
+                              Text('Time: \\${eventTime}'),
+                              Text('Location: \\${locationID}'),
+                              Text('Organizer: \\${organizer}'),
                             ],
                           ),
                         ),
@@ -877,6 +944,184 @@ class _AdminProfileEditModalState extends State<_AdminProfileEditModal> {
                   ),
                   onPressed: _loading ? null : _save,
                 ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _EditEventDialog extends StatefulWidget {
+  final String docId;
+  final Map<String, dynamic> event;
+  const _EditEventDialog({required this.docId, required this.event});
+  @override
+  State<_EditEventDialog> createState() => _EditEventDialogState();
+}
+
+class _EditEventDialogState extends State<_EditEventDialog> {
+  final _formKey = GlobalKey<FormState>();
+  late TextEditingController _eventNameController;
+  late TextEditingController _descriptionController;
+  late TextEditingController _organizerController;
+  late TextEditingController _locationController;
+  DateTime? _eventDate;
+  TimeOfDay? _eventTime;
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _eventNameController = TextEditingController(
+      text: widget.event['eventName'] ?? '',
+    );
+    _descriptionController = TextEditingController(
+      text: widget.event['description'] ?? '',
+    );
+    _organizerController = TextEditingController(
+      text: widget.event['organizer'] ?? '',
+    );
+    _locationController = TextEditingController(
+      text: widget.event['locationID'] ?? '',
+    );
+    final ts = widget.event['eventDate'];
+    if (ts is Timestamp) {
+      _eventDate = ts.toDate();
+    }
+    final timeStr = widget.event['eventTime'] as String?;
+    if (timeStr != null && timeStr.contains(':')) {
+      final parts = timeStr.split(':');
+      final hour = int.tryParse(parts[0]) ?? 0;
+      final minute = int.tryParse(parts[1].split(' ')[0]) ?? 0;
+      _eventTime = TimeOfDay(hour: hour, minute: minute);
+    }
+  }
+
+  @override
+  void dispose() {
+    _eventNameController.dispose();
+    _descriptionController.dispose();
+    _organizerController.dispose();
+    _locationController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    if (!_formKey.currentState!.validate() ||
+        _eventDate == null ||
+        _eventTime == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please fill all fields and select date/time.'),
+        ),
+      );
+      return;
+    }
+    setState(() => _isLoading = true);
+    try {
+      await FirebaseFirestore.instance
+          .collection('campusEvents')
+          .doc(widget.docId)
+          .update({
+            'eventName': _eventNameController.text.trim(),
+            'description': _descriptionController.text.trim(),
+            'eventDate': Timestamp.fromDate(_eventDate!),
+            'eventTime': _eventTime!.format(context),
+            'locationID': _locationController.text.trim(),
+            'organizer': _organizerController.text.trim(),
+          });
+      if (mounted) Navigator.of(context).pop();
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to update event: $e')));
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Edit Event'),
+      content: SingleChildScrollView(
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(
+                controller: _eventNameController,
+                decoration: const InputDecoration(labelText: 'Event Name'),
+                validator: (value) =>
+                    value == null || value.isEmpty ? 'Enter event name' : null,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _descriptionController,
+                decoration: const InputDecoration(labelText: 'Description'),
+                maxLines: 3,
+                validator: (value) =>
+                    value == null || value.isEmpty ? 'Enter description' : null,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _organizerController,
+                decoration: const InputDecoration(labelText: 'Organizer'),
+                validator: (value) =>
+                    value == null || value.isEmpty ? 'Enter organizer' : null,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _locationController,
+                decoration: const InputDecoration(labelText: 'Location Name'),
+                validator: (value) => value == null || value.isEmpty
+                    ? 'Enter location name'
+                    : null,
+              ),
+              const SizedBox(height: 12),
+              ListTile(
+                title: Text(
+                  _eventDate == null
+                      ? 'Select Event Date'
+                      : 'Date: \\${_eventDate!.toLocal().toString().split(' ')[0]}',
+                ),
+                trailing: const Icon(Icons.calendar_today),
+                onTap: () async {
+                  final picked = await showDatePicker(
+                    context: context,
+                    initialDate: _eventDate ?? DateTime.now(),
+                    firstDate: DateTime.now().subtract(const Duration(days: 1)),
+                    lastDate: DateTime(2100),
+                  );
+                  if (picked != null) setState(() => _eventDate = picked);
+                },
+              ),
+              ListTile(
+                title: Text(
+                  _eventTime == null
+                      ? 'Select Event Time'
+                      : 'Time: \\${_eventTime!.format(context)}',
+                ),
+                trailing: const Icon(Icons.access_time),
+                onTap: () async {
+                  final picked = await showTimePicker(
+                    context: context,
+                    initialTime: _eventTime ?? TimeOfDay.now(),
+                  );
+                  if (picked != null) setState(() => _eventTime = picked);
+                },
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: _isLoading ? null : _submit,
+                child: _isLoading
+                    ? const CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      )
+                    : const Text('Save Changes'),
               ),
             ],
           ),

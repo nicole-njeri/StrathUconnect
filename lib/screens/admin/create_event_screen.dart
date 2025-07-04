@@ -48,7 +48,8 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
         description: _descriptionController.text.trim(),
         eventDate: _eventDate!,
         eventTime: _eventTime!.format(context),
-        locationID: _locationController.text.trim(),
+        locationID: _locationController.text
+            .trim(), // This is now the location name
         organizer: _organizerController.text.trim(),
         createdByAdminID: user.uid,
       );
@@ -101,9 +102,10 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
               const SizedBox(height: 12),
               TextFormField(
                 controller: _locationController,
-                decoration: const InputDecoration(labelText: 'Location ID'),
-                validator: (value) =>
-                    value == null || value.isEmpty ? 'Enter location ID' : null,
+                decoration: const InputDecoration(labelText: 'Location Name'),
+                validator: (value) => value == null || value.isEmpty
+                    ? 'Enter location name'
+                    : null,
               ),
               const SizedBox(height: 12),
               ListTile(
