@@ -1,6 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:strathapp/screens/admin/user_management_screen.dart';
+import 'package:strathapp/screens/admin/create_event_screen.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:strathapp/services/auth_service.dart';
 import 'package:strathapp/screens/login_screen.dart';
+import 'package:strathapp/screens/admin/manage_locations_screen.dart';
+import 'package:strathapp/screens/admin/forum_moderation_screen.dart';
+import 'package:strathapp/screens/admin/checklist_management_screen.dart';
+import 'package:strathapp/screens/admin/notification_management_screen.dart';
+import 'package:strathapp/screens/admin/reports_screen.dart';
+import 'package:strathapp/screens/admin/support_feedback_screen.dart';
+import 'package:strathapp/widgets/strathmore_logo.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'dart:io';
 
 class AdminPanelScreen extends StatefulWidget {
   const AdminPanelScreen({super.key});
@@ -16,7 +29,6 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
   // Define your color palette
   static const Color primaryBlue = Color(0xFF003399);
   static const Color primaryRed = Color(0xFFE1251B);
-  static const Color lightGrey = Color(0xFFF4F6FA);
   static const Color darkText = Color(0xFF333333);
 
   void _selectPage(int index) {
@@ -64,7 +76,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
           ),
           ListTile(
             leading: const Icon(Icons.forum),
-            title: const Text('Forum Moderation'),
+            title: const Text('Manage Forum'),
             onTap: () => _selectPage(4),
             selected: _selectedPageIndex == 4,
           ),
@@ -76,7 +88,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
           ),
           ListTile(
             leading: const Icon(Icons.notifications),
-            title: const Text('Send Notifications'),
+            title: const Text('Manage Notifications'),
             onTap: () => _selectPage(6),
             selected: _selectedPageIndex == 6,
           ),
@@ -100,15 +112,15 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
   @override
   Widget build(BuildContext context) {
     final List<Widget> pages = [
-      const _DashboardScreen(),
-      const _PlaceholderScreen(title: 'User Management'),
-      const _PlaceholderScreen(title: 'Manage Locations'),
-      const _PlaceholderScreen(title: 'Manage Events'),
-      const _PlaceholderScreen(title: 'Forum Moderation'),
-      const _PlaceholderScreen(title: 'Onboarding Checklists'),
-      const _PlaceholderScreen(title: 'Send Notifications'),
-      const _PlaceholderScreen(title: 'Reports'),
-      const _PlaceholderScreen(title: 'Support & Feedback'),
+      _DashboardScreen(adminNameFuture: _authService.getUserFullName()),
+      const UserManagementScreen(),
+      const ManageLocationsScreen(),
+      const ManageEventsScreen(),
+      const ForumModerationScreen(),
+      const ChecklistManagementScreen(),
+      const NotificationManagementScreen(),
+      const ReportsScreen(),
+      const SupportFeedbackScreen(),
     ];
 
     final List<String> titles = [
@@ -116,21 +128,77 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
       'User Management',
       'Manage Locations',
       'Manage Events',
-      'Forum Moderation',
+      'Manage Forum',
       'Onboarding Checklists',
-      'Send Notifications',
+      'Manage Notifications',
       'Reports',
       'Support & Feedback',
     ];
 
     return Scaffold(
-      backgroundColor: lightGrey,
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        title: Text(titles[_selectedPageIndex]),
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: [
+            // Strathmore Logo between nav icon and title
+            const SizedBox(
+              height: 36,
+              child: Padding(
+                padding: EdgeInsets.only(right: 12),
+                child: StrathmoreLogo(size: 32),
+              ),
+            ),
+            Text(
+              titles[_selectedPageIndex],
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 20,
+              ),
+            ),
+          ],
+        ),
         backgroundColor: primaryBlue,
+        iconTheme: const IconThemeData(color: Colors.white),
         actions: [
           IconButton(
-            icon: const Icon(Icons.logout),
+            icon: const Icon(Icons.account_circle, color: Colors.white),
+            tooltip: 'Profile',
+            onPressed: () async {
+              final user = await FirebaseFirestore.instance
+                  .collection('admins')
+                  .doc(_authService.currentUser?.uid)
+                  .get();
+              final data = user.data() ?? {};
+              final name = data['fullName'] ?? 'Admin';
+              final email = data['email'] ?? '';
+              final department = data['department'] ?? 'N/A';
+              final profilePictureURL = data['profilePictureURL'];
+              if (!context.mounted) return;
+              final result = await showModalBottomSheet<Map<String, dynamic>>(
+                context: context,
+                isScrollControlled: true,
+                shape: const RoundedRectangleBorder(
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                ),
+                builder: (context) {
+                  return _AdminProfileEditModal(
+                    uid: _authService.currentUser?.uid,
+                    initialName: name,
+                    initialDepartment: department,
+                    initialProfilePictureURL: profilePictureURL,
+                    email: email,
+                  );
+                },
+              );
+              if (result != null && mounted) {
+                setState(() {}); // Refresh profile info after update
+              }
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.logout, color: Colors.white),
             tooltip: 'Logout',
             onPressed: () async {
               showDialog(
@@ -143,7 +211,6 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
                 await _authService.signOut();
                 if (mounted) {
                   Navigator.of(context).pop(); // Remove loading dialog
-                  // Fallback: pop all and go to login
                   Navigator.of(context).pushAndRemoveUntil(
                     MaterialPageRoute(builder: (_) => const LoginScreen()),
                     (route) => false,
@@ -153,7 +220,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
                 if (mounted) {
                   Navigator.of(context).pop(); // Remove loading dialog
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Logout failed: ${e.toString()}')),
+                    SnackBar(content: Text('Logout failed: \\${e.toString()}')),
                   );
                 }
               }
@@ -169,11 +236,11 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
 
 // --- Dashboard Screen ---
 class _DashboardScreen extends StatelessWidget {
-  const _DashboardScreen();
+  final Future<String?> adminNameFuture;
+  const _DashboardScreen({required this.adminNameFuture});
 
   @override
   Widget build(BuildContext context) {
-    // Example data, replace with your real data source
     final List<Map<String, dynamic>> recentActivities = [
       {
         'icon': Icons.flag,
@@ -190,89 +257,243 @@ class _DashboardScreen extends StatelessWidget {
         'text': 'Event "Study Group" created',
         'time': '6 hours ago',
       },
-      // Add more items as needed
     ];
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Summary Cards
-          GridView.count(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            crossAxisCount: 2,
-            crossAxisSpacing: 16,
-            mainAxisSpacing: 16,
-            childAspectRatio: 1.5,
-            children: const [
-              _SummaryCard(
-                title: 'Total Students',
-                value: '120',
-                icon: Icons.people_outline,
-                color: _AdminPanelScreenState.primaryBlue,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header with gradient background (no logo, no welcome message)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(
+                  vertical: 32,
+                  horizontal: 24,
+                ),
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      _AdminPanelScreenState.primaryBlue,
+                      Color(0xFF3A4B6A),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.only(
+                    bottomLeft: Radius.circular(32),
+                    bottomRight: Radius.circular(32),
+                  ),
+                ),
+                child: FutureBuilder<String?>(
+                  future: adminNameFuture,
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const SizedBox(height: 32);
+                    }
+                    final adminName = snapshot.data ?? 'Admin';
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Hello, $adminName!',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        const Text(
+                          'Here is your dashboard overview.',
+                          style: TextStyle(color: Colors.white70, fontSize: 16),
+                        ),
+                      ],
+                    );
+                  },
+                ),
               ),
-              _SummaryCard(
-                title: 'Active Events',
-                value: '45',
-                icon: Icons.event_available,
-                color: _AdminPanelScreenState.primaryRed,
+              const SizedBox(height: 24),
+              // Summary Cards
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: SummaryCard(
+                        title: 'Total Students',
+                        value: '120',
+                        icon: Icons.people_outline,
+                        color: _AdminPanelScreenState.primaryBlue,
+                        iconColor: Colors.white,
+                        textColor: Colors.white,
+                      ),
+                    ),
+                    SizedBox(width: 16),
+                    Expanded(
+                      child: SummaryCard(
+                        title: 'Active Events',
+                        value: '45',
+                        icon: Icons.event_available,
+                        color: _AdminPanelScreenState.primaryRed,
+                        iconColor: Colors.white,
+                        textColor: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
               ),
+              const SizedBox(height: 32),
+              // Quick Actions
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Text(
+                  'Quick Actions',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    color: _AdminPanelScreenState.primaryBlue,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () {},
+                        icon: const Icon(Icons.block, color: Colors.white),
+                        label: const Text('Ban User'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: _AdminPanelScreenState.primaryRed,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () {},
+                        icon: const Icon(
+                          Icons.announcement,
+                          color: _AdminPanelScreenState.primaryBlue,
+                        ),
+                        label: const Text('Announcement'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          foregroundColor: _AdminPanelScreenState.primaryBlue,
+                          side: const BorderSide(
+                            color: _AdminPanelScreenState.primaryBlue,
+                            width: 2,
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 32),
+              // Recent Activity
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Text(
+                  'Recent Activity',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    color: _AdminPanelScreenState.primaryBlue,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Card(
+                  elevation: 2,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: ListView.separated(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    padding: const EdgeInsets.all(16),
+                    itemCount: recentActivities.length,
+                    separatorBuilder: (context, i) => const Divider(),
+                    itemBuilder: (context, index) {
+                      final activity = recentActivities[index];
+                      return Row(
+                        children: [
+                          CircleAvatar(
+                            backgroundColor: _AdminPanelScreenState.primaryBlue
+                                .withOpacity(0.1),
+                            child: Icon(
+                              activity['icon'],
+                              color: _AdminPanelScreenState.primaryBlue,
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  activity['text'],
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                Text(
+                                  activity['time'],
+                                  style: const TextStyle(
+                                    color: Colors.grey,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                ),
+              ),
+              const SizedBox(height: 32),
             ],
           ),
-          const SizedBox(height: 24),
-
-          // Quick Actions
-          Text('Quick Actions', style: Theme.of(context).textTheme.titleLarge),
-          const SizedBox(height: 16),
-          _QuickActionButton(title: 'Ban User', onTap: () {}),
-          const SizedBox(height: 12),
-          _QuickActionButton(
-            title: 'Post Announcement',
-            onTap: () {},
-            isPrimary: false,
-          ),
-          const SizedBox(height: 24),
-
-          // Recent Activity
-          Text(
-            'Recent Activity',
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
-          const SizedBox(height: 16),
-          SizedBox(
-            height: 200, // Set a height for the list
-            child: ListView.builder(
-              itemCount: recentActivities.length,
-              itemBuilder: (context, index) {
-                final activity = recentActivities[index];
-                return _RecentActivityItem(
-                  icon: activity['icon'],
-                  text: activity['text'],
-                  time: activity['time'],
-                );
-              },
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
 
 // --- Helper Widgets for Dashboard ---
-class _SummaryCard extends StatelessWidget {
+class SummaryCard extends StatelessWidget {
   final String title;
   final String value;
   final IconData icon;
   final Color color;
+  final Color iconColor;
+  final Color textColor;
 
-  const _SummaryCard({
+  const SummaryCard({
     required this.title,
     required this.value,
     required this.icon,
     required this.color,
+    this.iconColor = Colors.white,
+    this.textColor = Colors.white,
+    super.key,
   });
 
   @override
@@ -280,18 +501,23 @@ class _SummaryCard extends StatelessWidget {
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      color: color,
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, color: color, size: 32),
+            Icon(icon, color: iconColor, size: 32),
             const SizedBox(height: 16),
             Text(
               value,
-              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: textColor,
+              ),
             ),
-            Text(title, style: const TextStyle(color: Colors.grey)),
+            Text(title, style: TextStyle(color: textColor.withOpacity(0.8))),
           ],
         ),
       ),
@@ -299,44 +525,16 @@ class _SummaryCard extends StatelessWidget {
   }
 }
 
-class _QuickActionButton extends StatelessWidget {
-  final String title;
-  final VoidCallback onTap;
-  final bool isPrimary;
-
-  const _QuickActionButton({
-    required this.title,
-    required this.onTap,
-    this.isPrimary = true,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return ElevatedButton(
-      onPressed: onTap,
-      style: ElevatedButton.styleFrom(
-        foregroundColor: isPrimary
-            ? Colors.white
-            : _AdminPanelScreenState.darkText,
-        backgroundColor: isPrimary ? const Color(0xFF3A4B6A) : Colors.white,
-        minimumSize: const Size(double.infinity, 50),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        elevation: 2,
-      ),
-      child: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-    );
-  }
-}
-
-class _RecentActivityItem extends StatelessWidget {
+class RecentActivityItem extends StatelessWidget {
   final IconData icon;
   final String text;
   final String time;
 
-  const _RecentActivityItem({
+  const RecentActivityItem({
     required this.icon,
     required this.text,
     required this.time,
+    super.key,
   });
 
   @override
@@ -354,15 +552,336 @@ class _RecentActivityItem extends StatelessWidget {
   }
 }
 
-// --- Placeholder for other admin pages ---
-class _PlaceholderScreen extends StatelessWidget {
-  final String title;
-  const _PlaceholderScreen({required this.title});
+// --- Manage Events Screen ---
+class ManageEventsScreen extends StatelessWidget {
+  const ManageEventsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Text(title, style: Theme.of(context).textTheme.headlineMedium),
+    return Scaffold(
+      backgroundColor: const Color(0xFFF6EEDD),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          Navigator.of(
+            context,
+          ).push(MaterialPageRoute(builder: (_) => const CreateEventScreen()));
+        },
+        icon: const Icon(Icons.add),
+        label: const Text('Create Event'),
+        backgroundColor: _AdminPanelScreenState.primaryBlue,
+      ),
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
+            decoration: const BoxDecoration(
+              color: _AdminPanelScreenState.primaryBlue,
+              borderRadius: BorderRadius.only(
+                bottomLeft: Radius.circular(32),
+                bottomRight: Radius.circular(32),
+              ),
+            ),
+            child: const Text(
+              'Manage Events',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+          Expanded(
+            child: StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('campusEvents')
+                  .orderBy('eventDate', descending: false)
+                  .snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (snapshot.hasError) {
+                  return Center(child: Text('Error: ${snapshot.error}'));
+                }
+                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                  return const Center(child: Text('No events found.'));
+                }
+                final events = snapshot.data!.docs;
+                return ListView.separated(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  itemCount: events.length,
+                  separatorBuilder: (context, i) => const SizedBox(height: 16),
+                  itemBuilder: (context, index) {
+                    final event = events[index].data() as Map<String, dynamic>;
+                    final eventName = event['eventName'] ?? 'Untitled';
+                    final description = event['description'] ?? '';
+                    final eventDate = (event['eventDate'] as Timestamp?)
+                        ?.toDate();
+                    final eventTime = event['eventTime'] ?? '';
+                    final locationID = event['locationID'] ?? '';
+                    final organizer = event['organizer'] ?? '';
+                    return Material(
+                      elevation: 4,
+                      borderRadius: BorderRadius.circular(20),
+                      color: Colors.white.withOpacity(0.95),
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(20),
+                        onTap: () {},
+                        child: Container(
+                          padding: const EdgeInsets.all(20),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                eventName,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 18,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(description),
+                              const SizedBox(height: 8),
+                              Text(
+                                'Date: \\${eventDate != null ? eventDate.toLocal().toString().split(' ')[0] : 'N/A'}',
+                              ),
+                              Text('Time: \\$eventTime'),
+                              Text('Location: \\$locationID'),
+                              Text('Organizer: \\$organizer'),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// --- Place the modal widget at the top-level, after the AdminPanelScreen and its state ---
+
+class _AdminProfileEditModal extends StatefulWidget {
+  final String? uid;
+  final String initialName;
+  final String initialDepartment;
+  final String? initialProfilePictureURL;
+  final String email;
+
+  const _AdminProfileEditModal({
+    required this.uid,
+    required this.initialName,
+    required this.initialDepartment,
+    required this.initialProfilePictureURL,
+    required this.email,
+  });
+
+  @override
+  State<_AdminProfileEditModal> createState() => _AdminProfileEditModalState();
+}
+
+class _AdminProfileEditModalState extends State<_AdminProfileEditModal> {
+  final _formKey = GlobalKey<FormState>();
+  late String _name;
+  late String _department;
+  String? _profilePictureURL;
+  XFile? _pickedImage;
+  bool _loading = false;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _name = widget.initialName;
+    _department = widget.initialDepartment;
+    _profilePictureURL = widget.initialProfilePictureURL;
+  }
+
+  Future<void> _pickImage() async {
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 75,
+    );
+    if (picked != null) {
+      setState(() {
+        _pickedImage = picked;
+      });
+    }
+  }
+
+  Future<String?> _uploadImage(String uid) async {
+    if (_pickedImage == null) return _profilePictureURL;
+    final ref = FirebaseStorage.instance.ref().child(
+      'admin_profile_images/$uid.jpg',
+    );
+    await ref.putData(await _pickedImage!.readAsBytes());
+    return await ref.getDownloadURL();
+  }
+
+  Future<void> _save() async {
+    if (!_formKey.currentState!.validate()) return;
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final uid = widget.uid;
+      if (uid == null) throw Exception('User not found');
+      final url = await _uploadImage(uid);
+      await FirebaseFirestore.instance.collection('admins').doc(uid).update({
+        'fullName': _name,
+        'department': _department,
+        'profilePictureURL': url,
+      });
+      setState(() {
+        _loading = false;
+      });
+      if (mounted) Navigator.of(context).pop({'updated': true});
+    } catch (e) {
+      setState(() {
+        _loading = false;
+        _error = e.toString();
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(
+        left: 24,
+        right: 24,
+        top: 24,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+      ),
+      child: SingleChildScrollView(
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Stack(
+                alignment: Alignment.bottomRight,
+                children: [
+                  CircleAvatar(
+                    radius: 48,
+                    backgroundImage: _pickedImage != null
+                        ? FileImage(
+                            // ignore: use_build_context_synchronously
+                            File(_pickedImage!.path),
+                          )
+                        : (_profilePictureURL != null
+                                  ? NetworkImage(_profilePictureURL!)
+                                  : null)
+                              as ImageProvider<Object>?,
+                    backgroundColor: Colors.grey[200],
+                    child: (_profilePictureURL == null && _pickedImage == null)
+                        ? const Icon(
+                            Icons.account_circle,
+                            size: 64,
+                            color: Colors.grey,
+                          )
+                        : null,
+                  ),
+                  Positioned(
+                    bottom: 0,
+                    right: 0,
+                    child: InkWell(
+                      onTap: _pickImage,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.grey.shade300),
+                        ),
+                        padding: const EdgeInsets.all(6),
+                        child: const Icon(
+                          Icons.camera_alt,
+                          size: 22,
+                          color: Colors.black54,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              TextFormField(
+                initialValue: _name,
+                decoration: const InputDecoration(
+                  labelText: 'Full Name',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (v) =>
+                    v == null || v.trim().isEmpty ? 'Enter name' : null,
+                onChanged: (v) => _name = v,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                initialValue: _department,
+                decoration: const InputDecoration(
+                  labelText: 'Department',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (v) =>
+                    v == null || v.trim().isEmpty ? 'Enter department' : null,
+                onChanged: (v) => _department = v,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                initialValue: widget.email,
+                enabled: false,
+                decoration: const InputDecoration(
+                  labelText: 'Email',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              if (_error != null) ...[
+                const SizedBox(height: 12),
+                Text(_error!, style: const TextStyle(color: Colors.red)),
+              ],
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  icon: _loading
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Icon(Icons.save),
+                  label: Text(_loading ? 'Saving...' : 'Save Changes'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _AdminPanelScreenState.primaryBlue,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  onPressed: _loading ? null : _save,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

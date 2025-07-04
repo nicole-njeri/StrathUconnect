@@ -133,12 +133,25 @@ class AuthService {
 
   Future<String?> getUserRole() async {
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return null;
+    if (user == null) {
+      debugPrint('getUserRole: No user logged in');
+      return null;
+    }
     final doc = await FirebaseFirestore.instance
         .collection('users')
         .doc(user.uid)
         .get();
-    return doc.data()?['role'] as String?;
+    if (!doc.exists) {
+      debugPrint(
+        'getUserRole: User document does not exist for uid: \\${user.uid}',
+      );
+      return null;
+    }
+    final role = doc.data()?['role'] as String?;
+    debugPrint(
+      'getUserRole: Role for user \\${user.email} is \\${role ?? 'null'}',
+    );
+    return role;
   }
 
   void navigateAfterLogin(BuildContext context) async {
@@ -156,6 +169,18 @@ class AuthService {
         context,
         MaterialPageRoute(builder: (_) => const HomeScreen()),
       );
+    }
+  }
+
+  // Get admin full name
+  Future<String?> getUserFullName() async {
+    User? user = _auth.currentUser;
+    if (user == null) return null;
+    try {
+      final doc = await _firestore.collection('users').doc(user.uid).get();
+      return doc.data()?['fullName'] as String?;
+    } catch (e) {
+      return null;
     }
   }
 }

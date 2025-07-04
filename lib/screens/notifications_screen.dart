@@ -17,64 +17,37 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   String? _error;
   String? _currentUserId;
 
-  // Sample notifications data - in a real app, this would come from Firestore
+  // Real notifications from Firestore
+  final List<Map<String, dynamic>> _notifications = [];
+
+  // Sample notifications fallback (for demo/testing)
   final List<Map<String, dynamic>> _sampleNotifications = [
     {
       'id': '1',
-      'title': 'Assignment Due Tomorrow',
-      'message': 'Your Computer Science assignment is due tomorrow at 11:59 PM',
-      'type': 'academic',
+      'title': 'Event Reminder',
+      'message': 'Don\'t forget the campus event tomorrow!',
+      'type': 'event',
+      'priority': 'high',
       'timestamp': DateTime.now().subtract(const Duration(hours: 2)),
       'isRead': false,
-      'priority': 'high',
     },
     {
       'id': '2',
-      'title': 'Campus Event: Career Fair',
-      'message':
-          'Join us for the annual career fair this Friday from 9 AM to 5 PM',
-      'type': 'event',
-      'timestamp': DateTime.now().subtract(const Duration(hours: 4)),
-      'isRead': false,
+      'title': 'Library Notice',
+      'message': 'Library will close early today.',
+      'type': 'library',
       'priority': 'medium',
+      'timestamp': DateTime.now().subtract(const Duration(days: 1)),
+      'isRead': true,
     },
     {
       'id': '3',
-      'title': 'Library Book Return Reminder',
-      'message': 'Please return "Advanced Mathematics" by the end of this week',
-      'type': 'library',
-      'timestamp': DateTime.now().subtract(const Duration(days: 1)),
-      'isRead': true,
-      'priority': 'low',
-    },
-    {
-      'id': '4',
-      'title': 'Exam Schedule Updated',
-      'message':
-          'Your final exam schedule has been updated. Check your student portal.',
-      'type': 'academic',
-      'timestamp': DateTime.now().subtract(const Duration(days: 1)),
-      'isRead': true,
-      'priority': 'high',
-    },
-    {
-      'id': '5',
-      'title': 'IT Maintenance Notice',
-      'message':
-          'Scheduled maintenance on the student portal from 2 AM to 4 AM tonight',
+      'title': 'Maintenance',
+      'message': 'Water outage in Block C.',
       'type': 'maintenance',
-      'timestamp': DateTime.now().subtract(const Duration(days: 2)),
-      'isRead': true,
-      'priority': 'medium',
-    },
-    {
-      'id': '6',
-      'title': 'Student Organization Meeting',
-      'message': 'Computer Science Club meeting today at 3 PM in Room 201',
-      'type': 'event',
-      'timestamp': DateTime.now().subtract(const Duration(days: 2)),
-      'isRead': true,
       'priority': 'low',
+      'timestamp': DateTime.now().subtract(const Duration(minutes: 30)),
+      'isRead': false,
     },
   ];
 
@@ -92,9 +65,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         _currentUserId = user.uid;
       }
 
-      // In a real app, you would fetch notifications from Firestore
-      // For now, we'll simulate a loading delay
-      await Future.delayed(const Duration(seconds: 1));
+      // Load notifications from Firestore
       if (mounted) {
         setState(() {
           _isLoading = false;
