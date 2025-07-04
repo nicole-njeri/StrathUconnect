@@ -176,7 +176,7 @@ class _ResourcesScreenState extends State<ResourcesScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F6FA),
+      backgroundColor: const Color(0xFFF6EEDD),
       appBar: AppBar(
         title: const Text(
           'Resources',
@@ -215,15 +215,15 @@ class _ResourcesScreenState extends State<ResourcesScreen> {
                       )
                     : null,
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(16),
                   borderSide: const BorderSide(color: Colors.white30),
                 ),
                 enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(16),
                   borderSide: const BorderSide(color: Colors.white30),
                 ),
                 focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(16),
                   borderSide: const BorderSide(color: Colors.white),
                 ),
                 filled: true,
@@ -262,7 +262,7 @@ class _ResourcesScreenState extends State<ResourcesScreen> {
                           Text(
                             category,
                             style: const TextStyle(
-                              fontSize: 20,
+                              fontSize: 18,
                               fontWeight: FontWeight.bold,
                               color: Color(0xFF0A2B6B),
                             ),
@@ -283,75 +283,67 @@ class _ResourcesScreenState extends State<ResourcesScreen> {
   }
 
   Widget _buildResourceCard(Map<String, dynamic> resource) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    return Material(
       elevation: 2,
-      child: ListTile(
-        contentPadding: const EdgeInsets.all(16),
-        leading: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: const Color(0xFF0A2B6B).withOpacity(0.1),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Icon(
-            resource['icon'],
-            color: const Color(0xFF0A2B6B),
-            size: 24,
-          ),
-        ),
-        title: Text(
-          resource['title'],
-          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
-        ),
-        subtitle: Padding(
-          padding: const EdgeInsets.only(top: 4),
-          child: Text(
-            resource['description'],
-            style: TextStyle(color: Colors.grey[600], fontSize: 14),
-          ),
-        ),
-        trailing: Icon(
-          resource['type'] == 'phone' ? Icons.phone : Icons.arrow_forward_ios,
-          size: 16,
-          color: const Color(0xFF0A2B6B),
-        ),
+      borderRadius: BorderRadius.circular(16),
+      color: Colors.white,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
         onTap: () {
-          if (resource['type'] == 'phone') {
-            _launchPhone(resource['phone']);
-          } else {
-            _launchURL(resource['url']);
+          if (resource['type'] == 'online') {
+            launchUrl(Uri.parse(resource['url']));
+          } else if (resource['type'] == 'phone') {
+            launchUrl(Uri.parse('tel:${resource['phone']}'));
           }
         },
-      ),
-    );
-  }
-
-  Future<void> _launchURL(String url) async {
-    final Uri uri = Uri.parse(url);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    } else {
-      _showErrorSnackBar('Could not open the link');
-    }
-  }
-
-  Future<void> _launchPhone(String phone) async {
-    final Uri uri = Uri.parse('tel:$phone');
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri);
-    } else {
-      _showErrorSnackBar('Could not make the call');
-    }
-  }
-
-  void _showErrorSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
-        behavior: SnackBarBehavior.floating,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF0A2B6B).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  resource['icon'],
+                  color: const Color(0xFF0A2B6B),
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      resource['title'],
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
+                        color: Color(0xFF0A2B6B),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      resource['description'],
+                      style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Icon(
+                resource['type'] == 'phone'
+                    ? Icons.phone
+                    : Icons.arrow_forward_ios,
+                size: 16,
+                color: const Color(0xFF0A2B6B),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

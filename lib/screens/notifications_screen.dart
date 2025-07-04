@@ -181,8 +181,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final notifications = _sampleNotifications; // Use sample for demo
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F6FA),
+      backgroundColor: const Color(0xFFF6EEDD),
       appBar: AppBar(
         title: const Text(
           'Notifications',
@@ -191,7 +192,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         backgroundColor: const Color(0xFF0A2B6B),
         elevation: 0,
         actions: [
-          if (_sampleNotifications.any((n) => !n['isRead']))
+          if (notifications.any((n) => !n['isRead']))
             IconButton(
               icon: const Icon(Icons.done_all, color: Colors.white),
               tooltip: 'Mark all as read',
@@ -212,218 +213,162 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         ],
       ),
       body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : notifications.isEmpty
           ? const Center(
-              child: CircularProgressIndicator(color: Color(0xFF0A2B6B)),
-            )
-          : _error != null
-          ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.error_outline, size: 64, color: Colors.grey),
-                  const SizedBox(height: 16),
-                  Text(
-                    _error!,
-                    style: const TextStyle(fontSize: 16, color: Colors.grey),
-                  ),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: _loadNotifications,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF0A2B6B),
-                    ),
-                    child: const Text('Retry'),
-                  ),
-                ],
+              child: Text(
+                'No notifications yet.',
+                style: TextStyle(color: Colors.grey, fontSize: 18),
               ),
             )
-          : _sampleNotifications.isEmpty
-          ? const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.notifications_none, size: 64, color: Colors.grey),
-                  SizedBox(height: 16),
-                  Text(
-                    'No notifications',
-                    style: TextStyle(fontSize: 18, color: Colors.grey),
-                  ),
-                  SizedBox(height: 8),
-                  Text(
-                    'You\'re all caught up!',
-                    style: TextStyle(fontSize: 14, color: Colors.grey),
-                  ),
-                ],
-              ),
-            )
-          : ListView.builder(
+          : ListView.separated(
               padding: const EdgeInsets.all(16),
-              itemCount: _sampleNotifications.length,
-              itemBuilder: (context, index) {
-                final notification = _sampleNotifications[index];
-                return _buildNotificationCard(notification);
-              },
-            ),
-    );
-  }
-
-  Widget _buildNotificationCard(Map<String, dynamic> notification) {
-    final isRead = notification['isRead'] as bool;
-    final priority = notification['priority'] as String;
-    final type = notification['type'] as String;
-    final timestamp = notification['timestamp'] as DateTime;
-
-    return Dismissible(
-      key: Key(notification['id']),
-      direction: DismissDirection.endToStart,
-      background: Container(
-        alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 20),
-        color: Colors.red,
-        child: const Icon(Icons.delete, color: Colors.white),
-      ),
-      onDismissed: (direction) {
-        _deleteNotification(notification['id']);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${notification['title']} deleted'),
-            action: SnackBarAction(
-              label: 'Undo',
-              onPressed: () {
-                setState(() {
-                  _sampleNotifications.add(notification);
-                });
-              },
-            ),
-          ),
-        );
-      },
-      child: Card(
-        margin: const EdgeInsets.only(bottom: 12),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        elevation: isRead ? 1 : 3,
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: isRead ? Colors.transparent : _getPriorityColor(priority),
-              width: isRead ? 0 : 2,
-            ),
-          ),
-          child: ListTile(
-            contentPadding: const EdgeInsets.all(16),
-            leading: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: _getPriorityColor(priority).withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(
-                _getNotificationIcon(type),
-                color: _getPriorityColor(priority),
-                size: 24,
-              ),
-            ),
-            title: Text(
-              notification['title'],
-              style: TextStyle(
-                fontWeight: isRead ? FontWeight.w500 : FontWeight.w600,
-                fontSize: 16,
-                color: isRead ? Colors.grey[700] : Colors.black87,
-              ),
-            ),
-            subtitle: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 4),
-                Text(
-                  notification['message'],
-                  style: TextStyle(color: Colors.grey[600], fontSize: 14),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Icon(Icons.access_time, size: 12, color: Colors.grey[500]),
-                    const SizedBox(width: 4),
-                    Text(
-                      _getTimeAgo(timestamp),
-                      style: TextStyle(color: Colors.grey[500], fontSize: 12),
-                    ),
-                    const Spacer(),
-                    if (!isRead)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: _getPriorityColor(priority),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          priority.toUpperCase(),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+              itemCount: notifications.length,
+              separatorBuilder: (context, i) => const SizedBox(height: 16),
+              itemBuilder: (context, i) {
+                final n = notifications[i];
+                final priorityColor = n['priority'] == 'high'
+                    ? Colors.red
+                    : n['priority'] == 'low'
+                    ? Colors.green
+                    : Colors.orange;
+                return Material(
+                  elevation: 2,
+                  borderRadius: BorderRadius.circular(16),
+                  color: Colors.white,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: priorityColor.withOpacity(0.7),
+                        width: 2,
                       ),
-                  ],
-                ),
-              ],
-            ),
-            trailing: PopupMenuButton<String>(
-              icon: const Icon(Icons.more_vert),
-              onSelected: (value) {
-                switch (value) {
-                  case 'mark_read':
-                    _markAsRead(notification['id']);
-                    break;
-                  case 'delete':
-                    _deleteNotification(notification['id']);
-                    break;
-                }
-              },
-              itemBuilder: (context) => [
-                if (!isRead)
-                  const PopupMenuItem(
-                    value: 'mark_read',
-                    child: Row(
-                      children: [
-                        Icon(Icons.done),
-                        SizedBox(width: 8),
-                        Text('Mark as read'),
-                      ],
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: priorityColor.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Icon(
+                              _getNotificationIcon(n['type']),
+                              color: priorityColor,
+                              size: 28,
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        n['title'],
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 16,
+                                          color: Color(0xFF0A2B6B),
+                                        ),
+                                      ),
+                                    ),
+                                    if (n['priority'] == 'high' ||
+                                        n['priority'] == 'low')
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 8,
+                                          vertical: 2,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: priorityColor.withOpacity(0.1),
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
+                                          border: Border.all(
+                                            color: priorityColor,
+                                          ),
+                                        ),
+                                        child: Text(
+                                          n['priority']
+                                              .toString()
+                                              .toUpperCase(),
+                                          style: TextStyle(
+                                            color: priorityColor,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  n['message'],
+                                  style: const TextStyle(
+                                    color: Colors.black87,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.access_time,
+                                      size: 14,
+                                      color: Colors.grey[500],
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      _getTimeAgo(n['timestamp']),
+                                      style: const TextStyle(
+                                        color: Colors.grey,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          PopupMenuButton<String>(
+                            onSelected: (value) {
+                              if (value == 'delete') {
+                                _deleteNotification(n['id']);
+                              } else if (value == 'mark_read') {
+                                _markAsRead(n['id']);
+                              }
+                            },
+                            itemBuilder: (context) => [
+                              if (!n['isRead'])
+                                const PopupMenuItem(
+                                  value: 'mark_read',
+                                  child: Text('Mark as read'),
+                                ),
+                              const PopupMenuItem(
+                                value: 'delete',
+                                child: Text('Delete'),
+                              ),
+                            ],
+                            icon: const Icon(
+                              Icons.more_vert,
+                              size: 20,
+                              color: Colors.grey,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                const PopupMenuItem(
-                  value: 'delete',
-                  child: Row(
-                    children: [
-                      Icon(Icons.delete, color: Colors.red),
-                      SizedBox(width: 8),
-                      Text('Delete', style: TextStyle(color: Colors.red)),
-                    ],
-                  ),
-                ),
-              ],
+                );
+              },
             ),
-            onTap: () {
-              if (!isRead) {
-                _markAsRead(notification['id']);
-              }
-              // Here you could navigate to a detailed view or perform an action
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Opening ${notification['title']}'),
-                  duration: const Duration(seconds: 1),
-                ),
-              );
-            },
-          ),
-        ),
-      ),
     );
   }
 }
