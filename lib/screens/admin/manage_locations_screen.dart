@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:image_picker/image_picker.dart';
 
 class ManageLocationsScreen extends StatefulWidget {
   const ManageLocationsScreen({super.key});
@@ -47,119 +49,226 @@ class _ManageLocationsScreenState extends State<ManageLocationsScreen> {
     final imagesController = TextEditingController(
       text: (data['imageURLs'] as List?)?.join(', ') ?? '',
     );
+    final directionsController = TextEditingController(
+      text: data['directions'] ?? '',
+    );
+    final accessibilityController = TextEditingController(
+      text: data['accessibilityNotes'] ?? '',
+    );
+    String? selectedCategory = data['category'] ?? null;
+    bool isVisible = data['isVisible'] != false;
+    XFile? pickedImage;
+    bool uploadingImage = false;
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       builder: (context) {
-        return Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom,
-            left: 20,
-            right: 20,
-            top: 20,
-          ),
-          child: Wrap(
-            children: [
-              Text(
-                isEdit ? 'Edit Location' : 'Add Location',
-                style: Theme.of(context).textTheme.headlineSmall,
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: nameController,
-                decoration: const InputDecoration(labelText: 'Location Name'),
-              ),
-              const SizedBox(height: 10),
-              TextField(
-                controller: typeController,
-                decoration: const InputDecoration(
-                  labelText: 'Type (e.g., building, lab)',
+        return StatefulBuilder(
+          builder: (context, setState) => Padding(
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(context).viewInsets.bottom,
+              left: 20,
+              right: 20,
+              top: 20,
+            ),
+            child: Wrap(
+              children: [
+                Text(
+                  isEdit ? 'Edit Location' : 'Add Location',
+                  style: Theme.of(context).textTheme.headlineSmall,
                 ),
-              ),
-              const SizedBox(height: 10),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: latController,
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(labelText: 'Latitude'),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: TextField(
-                      controller: lngController,
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(labelText: 'Longitude'),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-              TextField(
-                controller: descController,
-                decoration: const InputDecoration(labelText: 'Description'),
-                maxLines: 2,
-              ),
-              const SizedBox(height: 10),
-              TextField(
-                controller: imagesController,
-                decoration: const InputDecoration(
-                  labelText: 'Image URLs (comma separated)',
+                const SizedBox(height: 16),
+                TextField(
+                  controller: nameController,
+                  decoration: const InputDecoration(labelText: 'Location Name'),
                 ),
-              ),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: () async {
-                  final name = nameController.text.trim();
-                  final type = typeController.text.trim();
-                  final lat = double.tryParse(latController.text.trim());
-                  final lng = double.tryParse(lngController.text.trim());
-                  final desc = descController.text.trim();
-                  final images = imagesController.text
-                      .split(',')
-                      .map((e) => e.trim())
-                      .where((e) => e.isNotEmpty)
-                      .toList();
-                  if (name.isEmpty ||
-                      type.isEmpty ||
-                      lat == null ||
-                      lng == null) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Please fill all required fields.'),
+                const SizedBox(height: 10),
+                DropdownButtonFormField<String>(
+                  value: selectedCategory,
+                  items:
+                      [
+                            'Academic',
+                            'Dining',
+                            'Sports',
+                            'Administration',
+                            'Library',
+                            'Residence',
+                            'Other',
+                          ]
+                          .map(
+                            (cat) =>
+                                DropdownMenuItem(value: cat, child: Text(cat)),
+                          )
+                          .toList(),
+                  onChanged: (val) => setState(() => selectedCategory = val),
+                  decoration: const InputDecoration(labelText: 'Category'),
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: typeController,
+                  decoration: const InputDecoration(
+                    labelText: 'Type (e.g., building, lab)',
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: latController,
+                        keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(
+                          labelText: 'Latitude',
+                        ),
                       ),
-                    );
-                    return;
-                  }
-                  final data = {
-                    'locationName': name,
-                    'type': type,
-                    'coordinates': GeoPoint(lat, lng),
-                    'description': desc,
-                    'imageURLs': images,
-                  };
-                  try {
-                    if (isEdit) {
-                      await doc.reference.update(data);
-                    } else {
-                      await FirebaseFirestore.instance
-                          .collection('campusLocations')
-                          .add(data);
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: TextField(
+                        controller: lngController,
+                        keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(
+                          labelText: 'Longitude',
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: descController,
+                  decoration: const InputDecoration(labelText: 'Description'),
+                  maxLines: 2,
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: directionsController,
+                  decoration: const InputDecoration(
+                    labelText: 'Textual Directions',
+                  ),
+                  maxLines: 2,
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: accessibilityController,
+                  decoration: const InputDecoration(
+                    labelText: 'Accessibility Notes (optional)',
+                  ),
+                  maxLines: 2,
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    Switch(
+                      value: isVisible,
+                      onChanged: (val) => setState(() => isVisible = val),
+                    ),
+                    const Text('Visible to students'),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    ElevatedButton.icon(
+                      onPressed: uploadingImage
+                          ? null
+                          : () async {
+                              final picker = ImagePicker();
+                              final picked = await picker.pickImage(
+                                source: ImageSource.gallery,
+                                imageQuality: 75,
+                              );
+                              if (picked != null) {
+                                setState(() => uploadingImage = true);
+                                final ref = FirebaseStorage.instance.ref().child(
+                                  'location_images/${DateTime.now().millisecondsSinceEpoch}_${picked.name}',
+                                );
+                                await ref.putData(await picked.readAsBytes());
+                                final url = await ref.getDownloadURL();
+                                imagesController.text =
+                                    (imagesController.text.isEmpty
+                                        ? ''
+                                        : imagesController.text + ', ') +
+                                    url;
+                                setState(() {
+                                  pickedImage = picked;
+                                  uploadingImage = false;
+                                });
+                              }
+                            },
+                      icon: const Icon(Icons.image),
+                      label: Text(
+                        uploadingImage ? 'Uploading...' : 'Add Image',
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: imagesController,
+                  decoration: const InputDecoration(
+                    labelText: 'Image URLs (comma separated)',
+                  ),
+                ),
+                const SizedBox(height: 20),
+                ElevatedButton(
+                  onPressed: () async {
+                    final name = nameController.text.trim();
+                    final type = typeController.text.trim();
+                    final lat = double.tryParse(latController.text.trim());
+                    final lng = double.tryParse(lngController.text.trim());
+                    final desc = descController.text.trim();
+                    final images = imagesController.text
+                        .split(',')
+                        .map((e) => e.trim())
+                        .where((e) => e.isNotEmpty)
+                        .toList();
+                    final directions = directionsController.text.trim();
+                    final accessibility = accessibilityController.text.trim();
+                    if (name.isEmpty ||
+                        type.isEmpty ||
+                        lat == null ||
+                        lng == null ||
+                        selectedCategory == null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Please fill all required fields.'),
+                        ),
+                      );
+                      return;
                     }
-                    if (mounted) Navigator.of(context).pop();
-                  } catch (e) {
-                    ScaffoldMessenger.of(
-                      context,
-                    ).showSnackBar(SnackBar(content: Text('Failed: $e')));
-                  }
-                },
-                child: Text(isEdit ? 'Update Location' : 'Add Location'),
-              ),
-              const SizedBox(height: 20),
-            ],
+                    final data = {
+                      'locationName': name,
+                      'type': type,
+                      'category': selectedCategory,
+                      'coordinates': GeoPoint(lat, lng),
+                      'description': desc,
+                      'imageURLs': images,
+                      'directions': directions,
+                      'accessibilityNotes': accessibility,
+                      'isVisible': isVisible,
+                    };
+                    try {
+                      if (isEdit) {
+                        await doc.reference.update(data);
+                      } else {
+                        await FirebaseFirestore.instance
+                            .collection('campusLocations')
+                            .add(data);
+                      }
+                      if (mounted) Navigator.of(context).pop();
+                    } catch (e) {
+                      ScaffoldMessenger.of(
+                        context,
+                      ).showSnackBar(SnackBar(content: Text('Failed: $e')));
+                    }
+                  },
+                  child: Text(isEdit ? 'Update Location' : 'Add Location'),
+                ),
+                const SizedBox(height: 20),
+              ],
+            ),
           ),
         );
       },

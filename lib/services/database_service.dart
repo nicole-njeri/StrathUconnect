@@ -51,6 +51,11 @@ class DatabaseService {
     await _firestore.collection('admins').doc(uid).update(data);
   }
 
+  /// Ban a user by setting banned: true in the users collection
+  Future<void> banUser(String uid) async {
+    await _firestore.collection('users').doc(uid).update({'banned': true});
+  }
+
   // --- Campus Events ---
   Future<DocumentReference> createCampusEvent({
     required String eventName,

@@ -131,31 +131,34 @@ class _ChecklistManagementScreenState extends State<ChecklistManagementScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Expanded(
-                  child: Row(
-                    children: [
-                      Text(
-                        data['templateName'] ?? '',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
-                      ),
-                      if (isActive) ...[
-                        const SizedBox(width: 8),
-                        const Chip(
-                          label: Text(
-                            'Active',
-                            style: TextStyle(color: Colors.white),
-                          ),
-                          backgroundColor: Colors.green,
-                          visualDensity: VisualDensity.compact,
-                        ),
-                      ],
-                    ],
+                  child: Text(
+                    data['templateName'] ?? '',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
                   ),
                 ),
+                if (isActive)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8.0),
+                    child: Chip(
+                      label: const Text(
+                        'Active',
+                        style: TextStyle(color: Colors.white, fontSize: 12),
+                      ),
+                      backgroundColor: Colors.green,
+                      visualDensity: VisualDensity.compact,
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 0,
+                      ),
+                    ),
+                  ),
                 PopupMenuButton<String>(
                   onSelected: (value) {
                     if (value == 'edit') {
@@ -229,76 +232,122 @@ class _ChecklistManagementScreenState extends State<ChecklistManagementScreen> {
   }
 
   Widget _buildStudentProgressTab() {
-    return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('onboardingChecklists')
-          .snapshots(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
+    return FutureBuilder<QuerySnapshot>(
+      future: FirebaseFirestore.instance
+          .collection('users')
+          .where('role', isEqualTo: 'student')
+          .get(),
+      builder: (context, userSnapshot) {
+        if (userSnapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
         }
-        if (snapshot.hasError) {
-          return Center(child: Text('Error: ${snapshot.error}'));
+        if (userSnapshot.hasError) {
+          return Center(child: Text('Error: ${userSnapshot.error}'));
         }
-        final checklists = snapshot.data?.docs ?? [];
-        if (checklists.isEmpty) {
-          return const Center(child: Text('No student checklists found.'));
+        final students = userSnapshot.data?.docs ?? [];
+        if (students.isEmpty) {
+          return const Center(child: Text('No students found.'));
         }
-        return ListView.separated(
-          padding: const EdgeInsets.all(16),
-          itemCount: checklists.length,
-          separatorBuilder: (context, i) => const SizedBox(height: 12),
-          itemBuilder: (context, i) {
-            final checklist = checklists[i];
-            final data = checklist.data() as Map<String, dynamic>;
-            return _buildStudentProgressCard(checklist.id, data);
+        return FutureBuilder<Map<String, dynamic>>(
+          future: _getActiveTemplateAndProgress(students),
+          builder: (context, progressSnapshot) {
+            if (progressSnapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            if (progressSnapshot.hasError) {
+              return Center(child: Text('Error: ${progressSnapshot.error}'));
+            }
+            final data = progressSnapshot.data ?? {};
+            final template = data['template'] as Map<String, dynamic>?;
+            final progressList = data['progressList'] as List<dynamic>? ?? [];
+            if (progressList.isEmpty) {
+              return const Center(child: Text('No student progress found.'));
+            }
+            return ListView.separated(
+              padding: const EdgeInsets.all(16),
+              itemCount: progressList.length,
+              separatorBuilder: (context, i) => const SizedBox(height: 12),
+              itemBuilder: (context, i) {
+                final item = progressList[i];
+                final student = item['student'] as Map<String, dynamic>;
+                final completed = item['completed'] as int;
+                final total = item['total'] as int;
+                return Card(
+                  elevation: 2,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          student['fullName'] ?? student['email'] ?? '',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                        Text(
+                          student['email'] ?? '',
+                          style: const TextStyle(color: Colors.grey),
+                        ),
+                        const SizedBox(height: 8),
+                        LinearProgressIndicator(
+                          value: total > 0 ? completed / total : 0.0,
+                          backgroundColor: Colors.grey[300],
+                          valueColor: const AlwaysStoppedAnimation<Color>(
+                            Color(0xFF1A3C7C),
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text('$completed of $total tasks completed'),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            );
           },
         );
       },
     );
   }
 
-  Widget _buildStudentProgressCard(
-    String studentId,
-    Map<String, dynamic> data,
-  ) {
-    final completedTasks = data['completedTasks'] ?? 0;
-    final totalTasks = data['totalTasks'] ?? 0;
-    final progress = totalTasks > 0 ? completedTasks / totalTasks : 0.0;
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    'Student ID: $studentId',
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                ),
-                Text('$completedTasks/$totalTasks'),
-              ],
-            ),
-            const SizedBox(height: 8),
-            LinearProgressIndicator(value: progress),
-            const SizedBox(height: 8),
-            Text('Template: ${data['templateName'] ?? ''}'),
-            if (data['lastUpdated'] != null) ...[
-              const SizedBox(height: 4),
-              Text(
-                'Last updated: ${(data['lastUpdated'] as Timestamp).toDate().toString().substring(0, 16)}',
-                style: const TextStyle(color: Colors.grey, fontSize: 12),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
+  Future<Map<String, dynamic>> _getActiveTemplateAndProgress(
+    List studentDocs,
+  ) async {
+    final templateSnap = await FirebaseFirestore.instance
+        .collection('checklistTemplates')
+        .where('isActive', isEqualTo: true)
+        .limit(1)
+        .get();
+    final template = templateSnap.docs.isNotEmpty
+        ? templateSnap.docs.first.data()
+        : null;
+    final totalTasks = template != null && template['tasks'] is List
+        ? (template['tasks'] as List).length
+        : 0;
+    final progressList = <Map<String, dynamic>>[];
+    for (final doc in studentDocs) {
+      final student = doc.data() as Map<String, dynamic>;
+      final progressSnap = await FirebaseFirestore.instance
+          .collection('onboardingProgress')
+          .doc(doc.id)
+          .get();
+      final completedIndexes =
+          progressSnap.exists &&
+              progressSnap.data()?['completedTaskIndexes'] is List
+          ? (progressSnap.data()!['completedTaskIndexes'] as List)
+          : [];
+      progressList.add({
+        'student': student,
+        'completed': completedIndexes.length,
+        'total': totalTasks,
+      });
+    }
+    return {'template': template, 'progressList': progressList};
   }
 
   void _showCreateTemplateDialog() {

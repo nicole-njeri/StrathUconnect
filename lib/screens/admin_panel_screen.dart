@@ -365,9 +365,15 @@ class _DashboardScreen extends StatelessWidget {
                   children: [
                     Expanded(
                       child: ElevatedButton.icon(
-                        onPressed: () {},
-                        icon: const Icon(Icons.block, color: Colors.white),
-                        label: const Text('Ban User'),
+                        onPressed: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => const CreateEventScreen(),
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.add, color: Colors.white),
+                        label: const Text('Create Event'),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: _AdminPanelScreenState.primaryRed,
                           foregroundColor: Colors.white,
@@ -570,6 +576,7 @@ class ManageEventsScreen extends StatelessWidget {
         icon: const Icon(Icons.add),
         label: const Text('Create Event'),
         backgroundColor: _AdminPanelScreenState.primaryBlue,
+        foregroundColor: Colors.white,
       ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -716,11 +723,11 @@ class ManageEventsScreen extends StatelessWidget {
                               Text(description),
                               const SizedBox(height: 8),
                               Text(
-                                'Date: \\${eventDate != null ? eventDate.toLocal().toString().split(' ')[0] : 'N/A'}',
+                                'Date: ${eventDate != null ? eventDate.toLocal().toString().split(' ')[0] : 'N/A'}',
                               ),
-                              Text('Time: \\${eventTime}'),
-                              Text('Location: \\${locationID}'),
-                              Text('Organizer: \\${organizer}'),
+                              Text('Time: ${eventTime}'),
+                              Text('Location: ${locationID}'),
+                              Text('Organizer: ${organizer}'),
                             ],
                           ),
                         ),
@@ -1086,7 +1093,7 @@ class _EditEventDialogState extends State<_EditEventDialog> {
                 title: Text(
                   _eventDate == null
                       ? 'Select Event Date'
-                      : 'Date: \\${_eventDate!.toLocal().toString().split(' ')[0]}',
+                      : 'Date: ${_eventDate!.toLocal().toString().split(' ')[0]}',
                 ),
                 trailing: const Icon(Icons.calendar_today),
                 onTap: () async {
@@ -1103,7 +1110,7 @@ class _EditEventDialogState extends State<_EditEventDialog> {
                 title: Text(
                   _eventTime == null
                       ? 'Select Event Time'
-                      : 'Time: \\${_eventTime!.format(context)}',
+                      : 'Time: ${_eventTime!.format(context)}',
                 ),
                 trailing: const Icon(Icons.access_time),
                 onTap: () async {
