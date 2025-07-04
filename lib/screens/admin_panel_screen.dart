@@ -11,6 +11,9 @@ import 'package:strathapp/screens/admin/notification_management_screen.dart';
 import 'package:strathapp/screens/admin/reports_screen.dart';
 import 'package:strathapp/screens/admin/support_feedback_screen.dart';
 import 'package:strathapp/widgets/strathmore_logo.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'dart:io';
 
 class AdminPanelScreen extends StatefulWidget {
   const AdminPanelScreen({super.key});
@@ -159,6 +162,41 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
         backgroundColor: primaryBlue,
         iconTheme: const IconThemeData(color: Colors.white),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.account_circle, color: Colors.white),
+            tooltip: 'Profile',
+            onPressed: () async {
+              final user = await FirebaseFirestore.instance
+                  .collection('admins')
+                  .doc(_authService.currentUser?.uid)
+                  .get();
+              final data = user.data() ?? {};
+              final name = data['fullName'] ?? 'Admin';
+              final email = data['email'] ?? '';
+              final department = data['department'] ?? 'N/A';
+              final profilePictureURL = data['profilePictureURL'];
+              if (!context.mounted) return;
+              final result = await showModalBottomSheet<Map<String, dynamic>>(
+                context: context,
+                isScrollControlled: true,
+                shape: const RoundedRectangleBorder(
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                ),
+                builder: (context) {
+                  return _AdminProfileEditModal(
+                    uid: _authService.currentUser?.uid,
+                    initialName: name,
+                    initialDepartment: department,
+                    initialProfilePictureURL: profilePictureURL,
+                    email: email,
+                  );
+                },
+              );
+              if (result != null && mounted) {
+                setState(() {}); // Refresh profile info after update
+              }
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.logout, color: Colors.white),
             tooltip: 'Logout',
@@ -627,6 +665,222 @@ class ManageEventsScreen extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// --- Place the modal widget at the top-level, after the AdminPanelScreen and its state ---
+
+class _AdminProfileEditModal extends StatefulWidget {
+  final String? uid;
+  final String initialName;
+  final String initialDepartment;
+  final String? initialProfilePictureURL;
+  final String email;
+
+  const _AdminProfileEditModal({
+    required this.uid,
+    required this.initialName,
+    required this.initialDepartment,
+    required this.initialProfilePictureURL,
+    required this.email,
+  });
+
+  @override
+  State<_AdminProfileEditModal> createState() => _AdminProfileEditModalState();
+}
+
+class _AdminProfileEditModalState extends State<_AdminProfileEditModal> {
+  final _formKey = GlobalKey<FormState>();
+  late String _name;
+  late String _department;
+  String? _profilePictureURL;
+  XFile? _pickedImage;
+  bool _loading = false;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _name = widget.initialName;
+    _department = widget.initialDepartment;
+    _profilePictureURL = widget.initialProfilePictureURL;
+  }
+
+  Future<void> _pickImage() async {
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 75,
+    );
+    if (picked != null) {
+      setState(() {
+        _pickedImage = picked;
+      });
+    }
+  }
+
+  Future<String?> _uploadImage(String uid) async {
+    if (_pickedImage == null) return _profilePictureURL;
+    final ref = FirebaseStorage.instance.ref().child(
+      'admin_profile_images/$uid.jpg',
+    );
+    await ref.putData(await _pickedImage!.readAsBytes());
+    return await ref.getDownloadURL();
+  }
+
+  Future<void> _save() async {
+    if (!_formKey.currentState!.validate()) return;
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final uid = widget.uid;
+      if (uid == null) throw Exception('User not found');
+      final url = await _uploadImage(uid);
+      await FirebaseFirestore.instance.collection('admins').doc(uid).update({
+        'fullName': _name,
+        'department': _department,
+        'profilePictureURL': url,
+      });
+      setState(() {
+        _loading = false;
+      });
+      if (mounted) Navigator.of(context).pop({'updated': true});
+    } catch (e) {
+      setState(() {
+        _loading = false;
+        _error = e.toString();
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(
+        left: 24,
+        right: 24,
+        top: 24,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+      ),
+      child: SingleChildScrollView(
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Stack(
+                alignment: Alignment.bottomRight,
+                children: [
+                  CircleAvatar(
+                    radius: 48,
+                    backgroundImage: _pickedImage != null
+                        ? FileImage(
+                            // ignore: use_build_context_synchronously
+                            File(_pickedImage!.path),
+                          )
+                        : (_profilePictureURL != null
+                                  ? NetworkImage(_profilePictureURL!)
+                                  : null)
+                              as ImageProvider<Object>?,
+                    backgroundColor: Colors.grey[200],
+                    child: (_profilePictureURL == null && _pickedImage == null)
+                        ? const Icon(
+                            Icons.account_circle,
+                            size: 64,
+                            color: Colors.grey,
+                          )
+                        : null,
+                  ),
+                  Positioned(
+                    bottom: 0,
+                    right: 0,
+                    child: InkWell(
+                      onTap: _pickImage,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.grey.shade300),
+                        ),
+                        padding: const EdgeInsets.all(6),
+                        child: const Icon(
+                          Icons.camera_alt,
+                          size: 22,
+                          color: Colors.black54,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              TextFormField(
+                initialValue: _name,
+                decoration: const InputDecoration(
+                  labelText: 'Full Name',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (v) =>
+                    v == null || v.trim().isEmpty ? 'Enter name' : null,
+                onChanged: (v) => _name = v,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                initialValue: _department,
+                decoration: const InputDecoration(
+                  labelText: 'Department',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (v) =>
+                    v == null || v.trim().isEmpty ? 'Enter department' : null,
+                onChanged: (v) => _department = v,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                initialValue: widget.email,
+                enabled: false,
+                decoration: const InputDecoration(
+                  labelText: 'Email',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              if (_error != null) ...[
+                const SizedBox(height: 12),
+                Text(_error!, style: const TextStyle(color: Colors.red)),
+              ],
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  icon: _loading
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Icon(Icons.save),
+                  label: Text(_loading ? 'Saving...' : 'Save Changes'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _AdminPanelScreenState.primaryBlue,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  onPressed: _loading ? null : _save,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

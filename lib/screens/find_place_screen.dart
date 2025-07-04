@@ -28,56 +28,56 @@ class _FindPlaceScreenState extends State<FindPlaceScreen> {
     {
       'name': "Strathmore Students' Centre",
       'description': 'Student activities, dining, and recreation',
-      'coordinates': LatLng(-1.31012, 36.81308),
+      'coordinates': const LatLng(-1.31012, 36.81308),
       'icon': Icons.sports_esports,
       'color': Colors.red,
     },
     {
       'name': 'Strathmore University Auditorium',
       'description': 'Main auditorium for events and ceremonies',
-      'coordinates': LatLng(-1.31017, 36.81385),
+      'coordinates': const LatLng(-1.31017, 36.81385),
       'icon': Icons.event,
       'color': Colors.purple,
     },
     {
       'name': 'Main Library',
       'description': 'University library and study spaces',
-      'coordinates': LatLng(-1.3090, 36.8152),
+      'coordinates': const LatLng(-1.3090, 36.8152),
       'icon': Icons.library_books,
       'color': Colors.blue,
     },
     {
       'name': 'Computer Science Building',
       'description': 'CS department and computer labs',
-      'coordinates': LatLng(-1.3096, 36.8145),
+      'coordinates': const LatLng(-1.3096, 36.8145),
       'icon': Icons.computer,
       'color': Colors.green,
     },
     {
       'name': 'Business School',
       'description': 'Business and economics programs',
-      'coordinates': LatLng(-1.3088, 36.8150),
+      'coordinates': const LatLng(-1.3088, 36.8150),
       'icon': Icons.business,
       'color': Colors.orange,
     },
     {
       'name': 'Health Services',
       'description': 'Medical clinic and health center',
-      'coordinates': LatLng(-1.3092, 36.8140),
+      'coordinates': const LatLng(-1.3092, 36.8140),
       'icon': Icons.local_hospital,
       'color': Colors.pink,
     },
     {
       'name': 'Sports Complex',
       'description': 'Gym, swimming pool, and sports facilities',
-      'coordinates': LatLng(-1.3105, 36.8142),
+      'coordinates': const LatLng(-1.3105, 36.8142),
       'icon': Icons.sports_soccer,
       'color': Colors.indigo,
     },
     {
       'name': 'Parking Lot A',
       'description': 'Main student parking area',
-      'coordinates': LatLng(-1.3085, 36.8135),
+      'coordinates': const LatLng(-1.3085, 36.8135),
       'icon': Icons.local_parking,
       'color': Colors.grey,
     },
@@ -105,7 +105,7 @@ class _FindPlaceScreenState extends State<FindPlaceScreen> {
 
   void _simulateUserLocation() {
     // Simulate user location (in a real app, this would come from GPS)
-    _userLocation = LatLng(-1.3085, 36.8135); // Parking Lot A
+    _userLocation = const LatLng(-1.3085, 36.8135); // Parking Lot A
   }
 
   void _selectDestination(Map<String, dynamic> location) {
@@ -124,8 +124,8 @@ class _FindPlaceScreenState extends State<FindPlaceScreen> {
       setState(() {
         _routePath = [
           _userLocation!,
-          LatLng(-1.3090, 36.8140), // Intermediate point
-          LatLng(-1.3095, 36.8135), // Intermediate point
+          const LatLng(-1.3090, 36.8140), // Intermediate point
+          const LatLng(-1.3095, 36.8135), // Intermediate point
           _destination!,
         ];
       });
