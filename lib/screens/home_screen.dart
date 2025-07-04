@@ -10,11 +10,8 @@ import 'events_calendar_screen.dart';
 import 'resources_screen.dart';
 import 'notifications_screen.dart';
 import 'login_screen.dart';
-<<<<<<< HEAD
-=======
 import 'support_screen.dart';
 import '../widgets/strathmore_logo.dart';
->>>>>>> 868c6cbaa54792a2729c203245127a8761309f27
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});

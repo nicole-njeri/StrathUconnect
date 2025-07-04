@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../services/auth_service.dart';
+import 'question_detail_screen.dart';
 
 class AskQuestionScreen extends StatefulWidget {
   const AskQuestionScreen({super.key});
@@ -48,7 +49,12 @@ class _AskQuestionScreenState extends State<AskQuestionScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Ask a Question')),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF0A2B6B),
+        title: const Text('Ask a Question'),
+        elevation: 0,
+      ),
+      backgroundColor: const Color(0xFFF6EEDD),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -60,9 +66,13 @@ class _AskQuestionScreenState extends State<AskQuestionScreen> {
                   Expanded(
                     child: TextFormField(
                       controller: _questionController,
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         labelText: 'Type your question...',
-                        border: OutlineInputBorder(),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        filled: true,
+                        fillColor: Colors.white,
                       ),
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
@@ -74,6 +84,11 @@ class _AskQuestionScreenState extends State<AskQuestionScreen> {
                   ),
                   const SizedBox(width: 8),
                   ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      shape: const CircleBorder(),
+                      padding: const EdgeInsets.all(12),
+                      backgroundColor: const Color(0xFF0A2B6B),
+                    ),
                     onPressed: _isSubmitting ? null : _submitQuestion,
                     child: _isSubmitting
                         ? const SizedBox(
@@ -81,7 +96,7 @@ class _AskQuestionScreenState extends State<AskQuestionScreen> {
                             height: 18,
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
-                        : const Icon(Icons.send),
+                        : const Icon(Icons.send, color: Colors.white),
                   ),
                 ],
               ),
@@ -106,22 +121,76 @@ class _AskQuestionScreenState extends State<AskQuestionScreen> {
                   }
                   return ListView.separated(
                     itemCount: docs.length,
-                    separatorBuilder: (context, i) => const Divider(),
+                    separatorBuilder: (context, i) =>
+                        const SizedBox(height: 16),
                     itemBuilder: (context, i) {
                       final data = docs[i].data() as Map<String, dynamic>;
-                      return ListTile(
-                        title: Text(data['question'] ?? ''),
-                        subtitle: Text(data['userEmail'] ?? 'Anonymous'),
-                        trailing: data['timestamp'] != null
-                            ? Text(
-                                (data['timestamp'] as Timestamp)
-                                    .toDate()
-                                    .toLocal()
-                                    .toString()
-                                    .substring(0, 16),
-                                style: const TextStyle(fontSize: 12),
-                              )
-                            : null,
+                      return Material(
+                        elevation: 2,
+                        borderRadius: BorderRadius.circular(16),
+                        color: Colors.white,
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(16),
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => QuestionDetailScreen(
+                                  questionId: docs[i].id,
+                                  questionText: data['question'] ?? '',
+                                  askedBy: data['userEmail'] ?? 'Anonymous',
+                                  timestamp:
+                                      (data['timestamp'] as Timestamp?)
+                                          ?.toDate() ??
+                                      DateTime.now(),
+                                ),
+                              ),
+                            );
+                          },
+                          child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  data['question'] ?? '',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 15,
+                                    color: Color(0xFF0A2B6B),
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      data['userEmail'] ?? 'Anonymous',
+                                      style: const TextStyle(
+                                        color: Colors.grey,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                    data['timestamp'] != null
+                                        ? Text(
+                                            (data['timestamp'] as Timestamp)
+                                                .toDate()
+                                                .toLocal()
+                                                .toString()
+                                                .substring(0, 16),
+                                            style: const TextStyle(
+                                              fontSize: 12,
+                                              color: Colors.grey,
+                                            ),
+                                          )
+                                        : const SizedBox(),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
                       );
                     },
                   );
