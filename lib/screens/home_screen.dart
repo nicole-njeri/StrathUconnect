@@ -12,6 +12,7 @@ import 'notifications_screen.dart';
 import 'login_screen.dart';
 import 'support_screen.dart';
 import '../widgets/strathmore_logo.dart';
+import 'profile_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -253,6 +254,16 @@ class _HomeScreenState extends State<HomeScreen> {
                     context,
                     MaterialPageRoute(
                       builder: (context) => const NotificationsScreen(),
+                    ),
+                  );
+                  setState(() {
+                    _currentIndex = 0;
+                  });
+                } else if (index == 3) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const ProfileScreen(),
                     ),
                   );
                   setState(() {
