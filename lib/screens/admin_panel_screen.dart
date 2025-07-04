@@ -3,7 +3,6 @@ import 'package:strathapp/screens/admin/user_management_screen.dart';
 import 'package:strathapp/screens/admin/create_event_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:strathapp/services/auth_service.dart';
-import 'package:strathapp/screens/login_screen.dart';
 import 'package:strathapp/screens/admin/manage_locations_screen.dart';
 import 'package:strathapp/screens/admin/forum_moderation_screen.dart';
 import 'package:strathapp/screens/admin/checklist_management_screen.dart';
@@ -14,6 +13,7 @@ import 'package:strathapp/widgets/strathmore_logo.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'dart:io';
+import 'package:strathapp/widgets/auth_wrapper.dart';
 
 class AdminPanelScreen extends StatefulWidget {
   const AdminPanelScreen({super.key});
@@ -212,7 +212,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
                 if (mounted) {
                   Navigator.of(context).pop(); // Remove loading dialog
                   Navigator.of(context).pushAndRemoveUntil(
-                    MaterialPageRoute(builder: (_) => const LoginScreen()),
+                    MaterialPageRoute(builder: (_) => const AuthWrapper()),
                     (route) => false,
                   );
                 }
