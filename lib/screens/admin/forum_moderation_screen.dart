@@ -47,7 +47,7 @@ class _ForumModerationScreenState extends State<ForumModerationScreen> {
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance
-                  .collection('forumPosts')
+                  .collection('questions')
                   .orderBy('isPinned', descending: true)
                   .orderBy('timestamp', descending: true)
                   .snapshots(),
@@ -189,7 +189,7 @@ class _ForumModerationScreenState extends State<ForumModerationScreen> {
                         _db.pinForumPost(postId, !(data['isPinned'] == true));
                       } else if (value == 'hide') {
                         await FirebaseFirestore.instance
-                            .collection('forumPosts')
+                            .collection('questions')
                             .doc(postId)
                             .update({'hidden': !(data['hidden'] == true)});
                       } else if (value == 'ban') {
@@ -197,7 +197,7 @@ class _ForumModerationScreenState extends State<ForumModerationScreen> {
                         setState(() {});
                       } else if (value == 'reviewed') {
                         await FirebaseFirestore.instance
-                            .collection('forumPosts')
+                            .collection('questions')
                             .doc(postId)
                             .update({'isFlagged': false, 'flagCount': 0});
                       }
@@ -265,7 +265,7 @@ class _ForumModerationScreenState extends State<ForumModerationScreen> {
   Widget _buildReplies(String postId) {
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
-          .collection('forumPosts')
+          .collection('questions')
           .doc(postId)
           .collection('replies')
           .snapshots(),
@@ -324,14 +324,14 @@ class _ForumModerationScreenState extends State<ForumModerationScreen> {
                       _showReplyDialog(postId, doc.id, existing: data);
                     } else if (value == 'delete') {
                       await FirebaseFirestore.instance
-                          .collection('forumPosts')
+                          .collection('questions')
                           .doc(postId)
                           .collection('replies')
                           .doc(doc.id)
                           .delete();
                     } else if (value == 'hide') {
                       await FirebaseFirestore.instance
-                          .collection('forumPosts')
+                          .collection('questions')
                           .doc(postId)
                           .collection('replies')
                           .doc(doc.id)
@@ -341,7 +341,7 @@ class _ForumModerationScreenState extends State<ForumModerationScreen> {
                       setState(() {});
                     } else if (value == 'reviewed') {
                       await FirebaseFirestore.instance
-                          .collection('forumPosts')
+                          .collection('questions')
                           .doc(postId)
                           .collection('replies')
                           .doc(doc.id)
@@ -582,7 +582,7 @@ class _AdminForumPostDetailSheetState extends State<AdminForumPostDetailSheet> {
                 ),
                 StreamBuilder<QuerySnapshot>(
                   stream: FirebaseFirestore.instance
-                      .collection('forumPosts')
+                      .collection('questions')
                       .doc(widget.postId)
                       .collection('replies')
                       .orderBy('timestamp', descending: false)

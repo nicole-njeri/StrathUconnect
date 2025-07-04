@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({Key? key}) : super(key: key);
+  const ProfileScreen({super.key});
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -42,14 +42,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
                 child: Column(
                   children: [
-                    CircleAvatar(
+                    const CircleAvatar(
                       radius: 36,
-                      backgroundColor: const Color(0xFF0A2B6B),
-                      child: const Icon(
-                        Icons.person,
-                        color: Colors.white,
-                        size: 40,
-                      ),
+                      backgroundColor: Color(0xFF0A2B6B),
+                      child: Icon(Icons.person, color: Colors.white, size: 40),
                     ),
                     const SizedBox(height: 24),
                     TextField(

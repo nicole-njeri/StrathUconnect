@@ -172,8 +172,7 @@ class _EventsCalendarScreenState extends State<EventsCalendarScreen> {
                               ),
                               const SizedBox(height: 2),
                               Text(
-                                _formatEventDate(event['eventDate']) +
-                                    '  b7 ' +
+                                '${_formatEventDate(event['eventDate'])}  b7 ' +
                                     (event['locationID'] ??
                                         event['location'] ??
                                         ''),

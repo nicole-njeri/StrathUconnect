@@ -55,7 +55,7 @@ class _ManageLocationsScreenState extends State<ManageLocationsScreen> {
     final accessibilityController = TextEditingController(
       text: data['accessibilityNotes'] ?? '',
     );
-    String? selectedCategory = data['category'] ?? null;
+    String? selectedCategory = data['category'];
     bool isVisible = data['isVisible'] != false;
     XFile? pickedImage;
     bool uploadingImage = false;
@@ -189,7 +189,7 @@ class _ManageLocationsScreenState extends State<ManageLocationsScreen> {
                                 imagesController.text =
                                     (imagesController.text.isEmpty
                                         ? ''
-                                        : imagesController.text + ', ') +
+                                        : '${imagesController.text}, ') +
                                     url;
                                 setState(() {
                                   pickedImage = picked;

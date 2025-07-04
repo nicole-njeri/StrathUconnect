@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:strathapp/services/database_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -138,7 +137,9 @@ class _ChecklistScreenState extends State<ChecklistScreen> {
                                   decoration: isCompleted
                                       ? TextDecoration.lineThrough
                                       : null,
-                                  color: isCompleted ? Colors.grey : Color(0xFF0A2B6B),
+                                  color: isCompleted
+                                      ? Colors.grey
+                                      : const Color(0xFF0A2B6B),
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),

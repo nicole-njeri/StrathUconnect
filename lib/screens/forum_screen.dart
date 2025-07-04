@@ -65,7 +65,7 @@ class _ForumScreenState extends State<ForumScreen> {
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance
-                  .collection('forumPosts')
+                  .collection('questions')
                   .orderBy('isPinned', descending: true)
                   .orderBy('timestamp', descending: true)
                   .snapshots(),
@@ -460,7 +460,7 @@ class _ForumPostDetailSheetState extends State<ForumPostDetailSheet> {
                 ),
                 StreamBuilder<QuerySnapshot>(
                   stream: FirebaseFirestore.instance
-                      .collection('forumPosts')
+                      .collection('questions')
                       .doc(widget.postId)
                       .collection('replies')
                       .orderBy('timestamp', descending: false)

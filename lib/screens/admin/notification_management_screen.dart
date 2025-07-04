@@ -57,7 +57,29 @@ class _NotificationManagementScreenState
       length: 3,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('Send Notifications'),
+          title: Row(
+            children: [
+              // If you have a logo, add it here, e.g.:
+              // SizedBox(
+              //   height: 32,
+              //   child: Padding(
+              //     padding: EdgeInsets.only(right: 8),
+              //     child: StrathmoreLogo(size: 28),
+              //   ),
+              // ),
+              Flexible(
+                child: Text(
+                  'Send Notifications',
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 20,
+                  ),
+                ),
+              ),
+            ],
+          ),
           bottom: const TabBar(
             indicatorColor: Color(0xFF003399),
             labelColor: Color(0xFF003399),

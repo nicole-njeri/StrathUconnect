@@ -9,12 +9,12 @@ class QuestionDetailScreen extends StatefulWidget {
   final DateTime timestamp;
 
   const QuestionDetailScreen({
-    Key? key,
+    super.key,
     required this.questionId,
     required this.questionText,
     required this.askedBy,
     required this.timestamp,
-  }) : super(key: key);
+  });
 
   @override
   State<QuestionDetailScreen> createState() => _QuestionDetailScreenState();

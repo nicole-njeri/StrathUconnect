@@ -114,8 +114,8 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
                 children: [
                   Expanded(
                     child: _buildQuickStat(
-                      'Forum Posts',
-                      '${stats['forumPosts'] ?? 0}',
+                      'Questions',
+                      '${stats['questions'] ?? 0}',
                       Icons.forum,
                     ),
                   ),
