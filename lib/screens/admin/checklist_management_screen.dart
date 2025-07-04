@@ -65,7 +65,7 @@ class _ChecklistManagementScreenState extends State<ChecklistManagementScreen> {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 3,
+      length: 2,
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Onboarding Checklists'),
@@ -73,16 +73,11 @@ class _ChecklistManagementScreenState extends State<ChecklistManagementScreen> {
             tabs: [
               Tab(text: 'Templates'),
               Tab(text: 'Student Progress'),
-              Tab(text: 'Assign Checklists'),
             ],
           ),
         ),
         body: TabBarView(
-          children: [
-            _buildTemplatesTab(),
-            _buildStudentProgressTab(),
-            _buildAssignChecklistsTab(),
-          ],
+          children: [_buildTemplatesTab(), _buildStudentProgressTab()],
         ),
         floatingActionButton: _selectedTabIndex == 0
             ? FloatingActionButton(
@@ -126,6 +121,7 @@ class _ChecklistManagementScreenState extends State<ChecklistManagementScreen> {
 
   Widget _buildTemplateCard(String templateId, Map<String, dynamic> data) {
     final tasks = List<Map<String, dynamic>>.from(data['tasks'] ?? []);
+    final isActive = data['isActive'] == true;
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -137,12 +133,27 @@ class _ChecklistManagementScreenState extends State<ChecklistManagementScreen> {
             Row(
               children: [
                 Expanded(
-                  child: Text(
-                    data['templateName'] ?? '',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
+                  child: Row(
+                    children: [
+                      Text(
+                        data['templateName'] ?? '',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      if (isActive) ...[
+                        const SizedBox(width: 8),
+                        const Chip(
+                          label: Text(
+                            'Active',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                          backgroundColor: Colors.green,
+                          visualDensity: VisualDensity.compact,
+                        ),
+                      ],
+                    ],
                   ),
                 ),
                 PopupMenuButton<String>(
@@ -183,6 +194,34 @@ class _ChecklistManagementScreenState extends State<ChecklistManagementScreen> {
                 padding: const EdgeInsets.only(left: 8),
                 child: Text('... and ${tasks.length - 3} more tasks'),
               ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                ElevatedButton.icon(
+                  onPressed: isActive
+                      ? null
+                      : () async {
+                          // Set this template as active, unset all others
+                          final batch = FirebaseFirestore.instance.batch();
+                          final templates = await FirebaseFirestore.instance
+                              .collection('checklistTemplates')
+                              .get();
+                          for (final doc in templates.docs) {
+                            batch.update(doc.reference, {
+                              'isActive': doc.id == templateId,
+                            });
+                          }
+                          await batch.commit();
+                          setState(() {});
+                        },
+                  icon: const Icon(Icons.check_circle),
+                  label: Text(isActive ? 'Active' : 'Set Active'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: isActive ? Colors.green : null,
+                  ),
+                ),
+              ],
+            ),
           ],
         ),
       ),
@@ -258,113 +297,6 @@ class _ChecklistManagementScreenState extends State<ChecklistManagementScreen> {
             ],
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildAssignChecklistsTab() {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Assign Checklist Template to Student',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 16),
-          Expanded(
-            child: Row(
-              children: [
-                Expanded(
-                  child: StreamBuilder<QuerySnapshot>(
-                    stream: FirebaseFirestore.instance
-                        .collection('checklistTemplates')
-                        .snapshots(),
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const Center(child: CircularProgressIndicator());
-                      }
-                      final templates = snapshot.data?.docs ?? [];
-                      if (templates.isEmpty) {
-                        return const Center(
-                          child: Text('No templates available.'),
-                        );
-                      }
-                      return DropdownButtonFormField<String>(
-                        decoration: const InputDecoration(
-                          labelText: 'Select Template',
-                          border: OutlineInputBorder(),
-                        ),
-                        items: templates.map((template) {
-                          final data = template.data() as Map<String, dynamic>;
-                          return DropdownMenuItem(
-                            value: template.id,
-                            child: Text(data['templateName'] ?? ''),
-                          );
-                        }).toList(),
-                        onChanged: (value) {
-                          // Store selected template for assignment
-                        },
-                      );
-                    },
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: StreamBuilder<QuerySnapshot>(
-                    stream: FirebaseFirestore.instance
-                        .collection('users')
-                        .where('role', isEqualTo: 'student')
-                        .snapshots(),
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const Center(child: CircularProgressIndicator());
-                      }
-                      final students = snapshot.data?.docs ?? [];
-                      if (students.isEmpty) {
-                        return const Center(child: Text('No students found.'));
-                      }
-                      return DropdownButtonFormField<String>(
-                        decoration: const InputDecoration(
-                          labelText: 'Select Student',
-                          border: OutlineInputBorder(),
-                        ),
-                        items: students.map((student) {
-                          final data = student.data() as Map<String, dynamic>;
-                          return DropdownMenuItem(
-                            value: student.id,
-                            child: Text(
-                              data['fullName'] ?? data['email'] ?? '',
-                            ),
-                          );
-                        }).toList(),
-                        onChanged: (value) {
-                          // Store selected student for assignment
-                        },
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: () {
-                // TODO: Implement assignment logic
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Assignment feature coming soon!'),
-                  ),
-                );
-              },
-              child: const Text('Assign Checklist'),
-            ),
-          ),
-        ],
       ),
     );
   }
