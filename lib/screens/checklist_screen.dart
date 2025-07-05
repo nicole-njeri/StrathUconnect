@@ -49,7 +49,13 @@ class _ChecklistScreenState extends State<ChecklistScreen> {
             final progress = totalTasks > 0 ? completedTasks / totalTasks : 0.0;
             return Scaffold(
               appBar: AppBar(
-                title: const Text('My Checklist'),
+                title: const Text(
+                  'My Checklist',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
                 leading: IconButton(
                   icon: const Icon(Icons.arrow_back),
                   onPressed: () => Navigator.pop(context),

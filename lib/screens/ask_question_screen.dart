@@ -60,7 +60,10 @@ class _AskQuestionScreenState extends State<AskQuestionScreen> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: const Color(0xFF0A2B6B),
-        title: const Text('Ask a Question'),
+        title: const Text(
+          'Ask a Question',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
         elevation: 0,
       ),
       backgroundColor: const Color(0xFFF6EEDD),

@@ -27,7 +27,10 @@ class _ForumScreenState extends State<ForumScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Q&A Forum'),
+        title: const Text(
+          'Forum',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
         actions: [
           IconButton(
             icon: Icon(_showPinned ? Icons.push_pin : Icons.push_pin_outlined),

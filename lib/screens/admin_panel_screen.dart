@@ -748,9 +748,15 @@ class ManageEventsScreen extends StatelessWidget {
                               Text(
                                 'Date: ${eventDate != null ? eventDate.toLocal().toString().split(' ')[0] : 'N/A'}',
                               ),
+<<<<<<< HEAD
+                              Text('Time: \\$eventTime'),
+                              Text('Location: \\$locationID'),
+                              Text('Organizer: \\$organizer'),
+=======
                               Text('Time: $eventTime'),
                               Text('Location: $locationID'),
                               Text('Organizer: $organizer'),
+>>>>>>> 86095da677b4e48de804bf681101232241e52be7
                             ],
                           ),
                         ),

@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:strathapp/firebase_options.dart';
 import 'package:strathapp/widgets/auth_wrapper.dart';
 import 'screens/login_screen.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -19,7 +20,28 @@ class StrathUConnectApp extends StatelessWidget {
     return MaterialApp(
       title: 'StrathUConnect',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(primarySwatch: Colors.red, fontFamily: 'Poppins'),
+      theme: ThemeData(
+        primarySwatch: Colors.red,
+        textTheme: GoogleFonts.interTextTheme(
+          Theme.of(context).textTheme.copyWith(
+            displayLarge: const TextStyle(fontSize: 20),
+            displayMedium: const TextStyle(fontSize: 20),
+            displaySmall: const TextStyle(fontSize: 20),
+            headlineLarge: const TextStyle(fontSize: 20),
+            headlineMedium: const TextStyle(fontSize: 20),
+            headlineSmall: const TextStyle(fontSize: 20),
+            titleLarge: const TextStyle(fontSize: 20),
+            titleMedium: const TextStyle(fontSize: 20),
+            titleSmall: const TextStyle(fontSize: 20),
+            bodyLarge: const TextStyle(fontSize: 20),
+            bodyMedium: const TextStyle(fontSize: 20),
+            bodySmall: const TextStyle(fontSize: 20),
+            labelLarge: const TextStyle(fontSize: 20),
+            labelMedium: const TextStyle(fontSize: 20),
+            labelSmall: const TextStyle(fontSize: 20),
+          ),
+        ),
+      ),
       home: const AuthGate(),
     );
   }
