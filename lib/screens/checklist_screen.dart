@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:strathapp/services/database_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -50,7 +49,13 @@ class _ChecklistScreenState extends State<ChecklistScreen> {
             final progress = totalTasks > 0 ? completedTasks / totalTasks : 0.0;
             return Scaffold(
               appBar: AppBar(
-                title: const Text('My Checklist'),
+                title: const Text(
+                  'My Checklist',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
                 leading: IconButton(
                   icon: const Icon(Icons.arrow_back),
                   onPressed: () => Navigator.pop(context),
@@ -138,7 +143,9 @@ class _ChecklistScreenState extends State<ChecklistScreen> {
                                   decoration: isCompleted
                                       ? TextDecoration.lineThrough
                                       : null,
-                                  color: isCompleted ? Colors.grey : Color(0xFF0A2B6B),
+                                  color: isCompleted
+                                      ? Colors.grey
+                                      : const Color(0xFF0A2B6B),
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),

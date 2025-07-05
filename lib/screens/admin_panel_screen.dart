@@ -13,7 +13,6 @@ import 'package:strathapp/widgets/strathmore_logo.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'dart:io';
-import 'package:strathapp/widgets/auth_wrapper.dart';
 import 'package:strathapp/screens/login_screen.dart';
 
 class AdminPanelScreen extends StatefulWidget {
@@ -718,9 +717,9 @@ class ManageEventsScreen extends StatelessWidget {
                               Text(
                                 'Date: \\${eventDate != null ? eventDate.toLocal().toString().split(' ')[0] : 'N/A'}',
                               ),
-                              Text('Time: \\${eventTime}'),
-                              Text('Location: \\${locationID}'),
-                              Text('Organizer: \\${organizer}'),
+                              Text('Time: \\$eventTime'),
+                              Text('Location: \\$locationID'),
+                              Text('Organizer: \\$organizer'),
                             ],
                           ),
                         ),

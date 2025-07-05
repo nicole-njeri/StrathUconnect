@@ -13,6 +13,7 @@ import 'login_screen.dart';
 import 'support_screen.dart';
 import '../widgets/strathmore_logo.dart';
 import 'profile_screen.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -41,11 +42,6 @@ class _HomeScreenState extends State<HomeScreen> {
       'icon': Icons.check_box,
       'title': 'My Checklist',
       'screen': const ChecklistScreen(),
-    },
-    {
-      'icon': Icons.campaign_outlined,
-      'title': 'Campus Updates',
-      'screen': const CampusUpdatesScreen(),
     },
     {
       'icon': Icons.event,
@@ -146,9 +142,12 @@ class _HomeScreenState extends State<HomeScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 24),
                   child: Text(
                     'Hi $userName 👋',
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: const Color(0xFF0A2B6B),
+                    style: GoogleFonts.inter(
+                      textStyle: Theme.of(context).textTheme.headlineMedium
+                          ?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: const Color(0xFF0A2B6B),
+                          ),
                     ),
                   ),
                 ),
@@ -188,10 +187,12 @@ class _HomeScreenState extends State<HomeScreen> {
                               const SizedBox(width: 20),
                               Text(
                                 card['title'],
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 18,
-                                  color: Color(0xFF3A2B1B),
+                                style: GoogleFonts.inter(
+                                  textStyle: const TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 18,
+                                    color: Color(0xFF3A2B1B),
+                                  ),
                                 ),
                               ),
                             ],

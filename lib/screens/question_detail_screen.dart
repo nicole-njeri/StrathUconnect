@@ -9,12 +9,12 @@ class QuestionDetailScreen extends StatefulWidget {
   final DateTime timestamp;
 
   const QuestionDetailScreen({
-    Key? key,
+    super.key,
     required this.questionId,
     required this.questionText,
     required this.askedBy,
     required this.timestamp,
-  }) : super(key: key);
+  });
 
   @override
   State<QuestionDetailScreen> createState() => _QuestionDetailScreenState();
@@ -50,7 +50,10 @@ class _QuestionDetailScreenState extends State<QuestionDetailScreen> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: const Color(0xFF0A2B6B),
-        title: const Text('Question Details'),
+        title: const Text(
+          'Question Detail',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
         elevation: 0,
       ),
       backgroundColor: const Color(0xFFF6EEDD),

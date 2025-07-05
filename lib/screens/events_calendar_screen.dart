@@ -58,7 +58,10 @@ class _EventsCalendarScreenState extends State<EventsCalendarScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('My Events'),
+        title: const Text(
+          'Events Calendar',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
@@ -172,8 +175,7 @@ class _EventsCalendarScreenState extends State<EventsCalendarScreen> {
                               ),
                               const SizedBox(height: 2),
                               Text(
-                                _formatEventDate(event['eventDate']) +
-                                    '  b7 ' +
+                                '${_formatEventDate(event['eventDate'])}  b7 ' +
                                     (event['locationID'] ??
                                         event['location'] ??
                                         ''),
