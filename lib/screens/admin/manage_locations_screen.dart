@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:image_picker/image_picker.dart';
 
 class ManageLocationsScreen extends StatefulWidget {
   const ManageLocationsScreen({super.key});
@@ -31,138 +33,326 @@ class _ManageLocationsScreenState extends State<ManageLocationsScreen> {
       text: data['locationName'] ?? '',
     );
     final typeController = TextEditingController(text: data['type'] ?? '');
-    final latController = TextEditingController(
-      text: data['coordinates'] is GeoPoint
-          ? (data['coordinates'] as GeoPoint).latitude.toString()
-          : '',
-    );
-    final lngController = TextEditingController(
-      text: data['coordinates'] is GeoPoint
-          ? (data['coordinates'] as GeoPoint).longitude.toString()
-          : '',
-    );
     final descController = TextEditingController(
       text: data['description'] ?? '',
     );
     final imagesController = TextEditingController(
       text: (data['imageURLs'] as List?)?.join(', ') ?? '',
     );
+    final directionsController = TextEditingController(
+      text: data['directions'] ?? '',
+    );
+    final accessibilityController = TextEditingController(
+      text: data['accessibilityNotes'] ?? '',
+    );
+    String? selectedCategory = data['category'];
+    bool isVisible = data['isVisible'] != false;
+    XFile? pickedImage;
+    bool uploadingImage = false;
+    
+    // Initialize coordinates
+    LatLng? selectedLocation;
+    if (data['coordinates'] is GeoPoint) {
+      final geo = data['coordinates'] as GeoPoint;
+      selectedLocation = LatLng(geo.latitude, geo.longitude);
+    } else {
+      // Default to Strathmore University center
+      selectedLocation = const LatLng(-1.3094, 36.8148);
+    }
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       builder: (context) {
-        return Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom,
-            left: 20,
-            right: 20,
-            top: 20,
-          ),
-          child: Wrap(
-            children: [
-              Text(
-                isEdit ? 'Edit Location' : 'Add Location',
-                style: Theme.of(context).textTheme.headlineSmall,
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: nameController,
-                decoration: const InputDecoration(labelText: 'Location Name'),
-              ),
-              const SizedBox(height: 10),
-              TextField(
-                controller: typeController,
-                decoration: const InputDecoration(
-                  labelText: 'Type (e.g., building, lab)',
-                ),
-              ),
-              const SizedBox(height: 10),
-              Row(
+        return StatefulBuilder(
+          builder: (context, setState) => Padding(
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(context).viewInsets.bottom,
+              left: 20,
+              right: 20,
+              top: 20,
+            ),
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: TextField(
-                      controller: latController,
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(labelText: 'Latitude'),
+                  Text(
+                    isEdit ? 'Edit Location' : 'Add Location',
+                    style: Theme.of(context).textTheme.headlineSmall,
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: nameController,
+                    decoration: const InputDecoration(labelText: 'Location Name'),
+                  ),
+                  const SizedBox(height: 10),
+                  DropdownButtonFormField<String>(
+                    value: selectedCategory,
+                    items: [
+                      'Academic',
+                      'Dining',
+                      'Sports',
+                      'Administration',
+                      'Library',
+                      'Residence',
+                      'Other',
+                    ].map((cat) => DropdownMenuItem(value: cat, child: Text(cat))).toList(),
+                    onChanged: (val) => setState(() => selectedCategory = val),
+                    decoration: const InputDecoration(labelText: 'Category'),
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: typeController,
+                    decoration: const InputDecoration(
+                      labelText: 'Type (e.g., building, lab)',
                     ),
                   ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: TextField(
-                      controller: lngController,
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(labelText: 'Longitude'),
+                  const SizedBox(height: 10),
+                  
+                  // Interactive Map Picker
+                  const Text(
+                    'Select Location on Map:',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 5),
+                  const Text(
+                    'Click on the map to place the location marker',
+                    style: TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
+                  const SizedBox(height: 10),
+                  
+                  // Quick Location Selection
+                  const Text(
+                    'Or select from common campus locations:',
+                    style: TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
+                  const SizedBox(height: 5),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 4,
+                    children: [
+                      _buildQuickLocationChip('Main Library', const LatLng(-1.3090, 36.8152), setState, selectedLocation),
+                      _buildQuickLocationChip('Student Center', const LatLng(-1.31012, 36.81308), setState, selectedLocation),
+                      _buildQuickLocationChip('Auditorium', const LatLng(-1.31017, 36.81385), setState, selectedLocation),
+                      _buildQuickLocationChip('Business School', const LatLng(-1.3088, 36.8150), setState, selectedLocation),
+                      _buildQuickLocationChip('CS Building', const LatLng(-1.3096, 36.8145), setState, selectedLocation),
+                      _buildQuickLocationChip('Main Entrance', const LatLng(-1.3094, 36.8148), setState, selectedLocation),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  
+                  Container(
+                    height: 200,
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.grey),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: FlutterMap(
+                        options: MapOptions(
+                          center: selectedLocation,
+                          zoom: 17.0,
+                          onTap: (tapPosition, point) {
+                            setState(() {
+                              selectedLocation = point;
+                            });
+                          },
+                        ),
+                        children: [
+                          TileLayer(
+                            urlTemplate: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                            subdomains: const ['a', 'b', 'c'],
+                          ),
+                          if (selectedLocation != null)
+                            MarkerLayer(
+                              markers: [
+                                Marker(
+                                  width: 40.0,
+                                  height: 40.0,
+                                  point: selectedLocation!,
+                                  child: const Icon(
+                                    Icons.location_on,
+                                    color: Colors.red,
+                                    size: 40,
+                                  ),
+                                ),
+                              ],
+                            ),
+                        ],
+                      ),
                     ),
                   ),
+                  const SizedBox(height: 10),
+                  
+                  // Display selected coordinates
+                  if (selectedLocation != null)
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[100],
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        'Coordinates: ${selectedLocation!.latitude.toStringAsFixed(6)}, ${selectedLocation!.longitude.toStringAsFixed(6)}',
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                    ),
+                  const SizedBox(height: 10),
+                  
+                  TextField(
+                    controller: descController,
+                    decoration: const InputDecoration(labelText: 'Description'),
+                    maxLines: 2,
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: directionsController,
+                    decoration: const InputDecoration(
+                      labelText: 'Textual Directions',
+                    ),
+                    maxLines: 2,
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: accessibilityController,
+                    decoration: const InputDecoration(
+                      labelText: 'Accessibility Notes (optional)',
+                    ),
+                    maxLines: 2,
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Switch(
+                        value: isVisible,
+                        onChanged: (val) => setState(() => isVisible = val),
+                      ),
+                      const Text('Visible to students'),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      ElevatedButton.icon(
+                        onPressed: uploadingImage
+                            ? null
+                            : () async {
+                                final picker = ImagePicker();
+                                final picked = await picker.pickImage(
+                                  source: ImageSource.gallery,
+                                  imageQuality: 75,
+                                );
+                                if (picked != null) {
+                                  setState(() => uploadingImage = true);
+                                  final ref = FirebaseStorage.instance.ref().child(
+                                    'location_images/${DateTime.now().millisecondsSinceEpoch}_${picked.name}',
+                                  );
+                                  await ref.putData(await picked.readAsBytes());
+                                  final url = await ref.getDownloadURL();
+                                  imagesController.text =
+                                      (imagesController.text.isEmpty
+                                          ? ''
+                                          : '${imagesController.text}, ') +
+                                      url;
+                                  setState(() {
+                                    pickedImage = picked;
+                                    uploadingImage = false;
+                                  });
+                                }
+                              },
+                        icon: const Icon(Icons.image),
+                        label: Text(
+                          uploadingImage ? 'Uploading...' : 'Add Image',
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: imagesController,
+                    decoration: const InputDecoration(
+                      labelText: 'Image URLs (comma separated)',
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  ElevatedButton(
+                    onPressed: () async {
+                      final name = nameController.text.trim();
+                      final type = typeController.text.trim();
+                      final desc = descController.text.trim();
+                      final images = imagesController.text
+                          .split(',')
+                          .map((e) => e.trim())
+                          .where((e) => e.isNotEmpty)
+                          .toList();
+                      final directions = directionsController.text.trim();
+                      final accessibility = accessibilityController.text.trim();
+                      
+                      if (name.isEmpty ||
+                          type.isEmpty ||
+                          selectedLocation == null ||
+                          selectedCategory == null) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Please fill all required fields and select a location on the map.'),
+                          ),
+                        );
+                        return;
+                      }
+                      
+                      final data = {
+                        'locationName': name,
+                        'type': type,
+                        'category': selectedCategory,
+                        'coordinates': GeoPoint(selectedLocation!.latitude, selectedLocation!.longitude),
+                        'description': desc,
+                        'imageURLs': images,
+                        'directions': directions,
+                        'accessibilityNotes': accessibility,
+                        'isVisible': isVisible,
+                      };
+                      
+                      try {
+                        if (isEdit) {
+                          await doc.reference.update(data);
+                        } else {
+                          await FirebaseFirestore.instance
+                              .collection('campusLocations')
+                              .add(data);
+                        }
+                        if (mounted) Navigator.of(context).pop();
+                      } catch (e) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Failed: $e')),
+                        );
+                      }
+                    },
+                    child: Text(isEdit ? 'Update Location' : 'Add Location'),
+                  ),
+                  const SizedBox(height: 20),
                 ],
               ),
-              const SizedBox(height: 10),
-              TextField(
-                controller: descController,
-                decoration: const InputDecoration(labelText: 'Description'),
-                maxLines: 2,
-              ),
-              const SizedBox(height: 10),
-              TextField(
-                controller: imagesController,
-                decoration: const InputDecoration(
-                  labelText: 'Image URLs (comma separated)',
-                ),
-              ),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: () async {
-                  final name = nameController.text.trim();
-                  final type = typeController.text.trim();
-                  final lat = double.tryParse(latController.text.trim());
-                  final lng = double.tryParse(lngController.text.trim());
-                  final desc = descController.text.trim();
-                  final images = imagesController.text
-                      .split(',')
-                      .map((e) => e.trim())
-                      .where((e) => e.isNotEmpty)
-                      .toList();
-                  if (name.isEmpty ||
-                      type.isEmpty ||
-                      lat == null ||
-                      lng == null) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Please fill all required fields.'),
-                      ),
-                    );
-                    return;
-                  }
-                  final data = {
-                    'locationName': name,
-                    'type': type,
-                    'coordinates': GeoPoint(lat, lng),
-                    'description': desc,
-                    'imageURLs': images,
-                  };
-                  try {
-                    if (isEdit) {
-                      await doc.reference.update(data);
-                    } else {
-                      await FirebaseFirestore.instance
-                          .collection('campusLocations')
-                          .add(data);
-                    }
-                    if (mounted) Navigator.of(context).pop();
-                  } catch (e) {
-                    ScaffoldMessenger.of(
-                      context,
-                    ).showSnackBar(SnackBar(content: Text('Failed: $e')));
-                  }
-                },
-                child: Text(isEdit ? 'Update Location' : 'Add Location'),
-              ),
-              const SizedBox(height: 20),
-            ],
+            ),
           ),
         );
       },
+    );
+  }
+
+  Widget _buildQuickLocationChip(String label, LatLng coordinates, StateSetter setState, LatLng? selectedLocation) {
+    return ActionChip(
+      label: Text(label),
+      onPressed: () {
+        setState(() {
+          selectedLocation = coordinates;
+        });
+      },
+      backgroundColor: selectedLocation == coordinates ? Colors.blue : Colors.grey[200],
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: BorderSide(color: selectedLocation == coordinates ? Colors.blue : Colors.transparent),
+      ),
     );
   }
 

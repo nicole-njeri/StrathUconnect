@@ -58,6 +58,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
                 child: Column(
                   children: [
+<<<<<<< HEAD
                     GestureDetector(
                       onTap: _pickImage,
                       child: CircleAvatar(
@@ -74,6 +75,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               )
                             : null,
                       ),
+=======
+                    const CircleAvatar(
+                      radius: 36,
+                      backgroundColor: Color(0xFF0A2B6B),
+                      child: Icon(Icons.person, color: Colors.white, size: 40),
+>>>>>>> 86095da677b4e48de804bf681101232241e52be7
                     ),
                     const SizedBox(height: 24),
                     TextField(

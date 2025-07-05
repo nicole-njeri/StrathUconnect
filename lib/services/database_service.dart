@@ -51,6 +51,11 @@ class DatabaseService {
     await _firestore.collection('admins').doc(uid).update(data);
   }
 
+  /// Ban a user by setting banned: true in the users collection
+  Future<void> banUser(String uid) async {
+    await _firestore.collection('users').doc(uid).update({'banned': true});
+  }
+
   // --- Campus Events ---
   Future<DocumentReference> createCampusEvent({
     required String eventName,
@@ -99,7 +104,7 @@ class DatabaseService {
     required String postContent,
     required String category,
   }) async {
-    final forumCollection = _firestore.collection('forumPosts');
+    final forumCollection = _firestore.collection('questions');
     return await forumCollection.add({
       'posterUserID': posterUserID,
       'posterEmail': posterEmail,
@@ -116,21 +121,21 @@ class DatabaseService {
   }
 
   Future<void> updateForumPost(String postId, Map<String, dynamic> data) async {
-    await _firestore.collection('forumPosts').doc(postId).update(data);
+    await _firestore.collection('questions').doc(postId).update(data);
   }
 
   Future<void> deleteForumPost(String postId) async {
-    await _firestore.collection('forumPosts').doc(postId).delete();
+    await _firestore.collection('questions').doc(postId).delete();
   }
 
   Future<void> upvoteForumPost(String postId) async {
-    await _firestore.collection('forumPosts').doc(postId).update({
+    await _firestore.collection('questions').doc(postId).update({
       'upvotes': FieldValue.increment(1),
     });
   }
 
   Future<void> downvoteForumPost(String postId) async {
-    await _firestore.collection('forumPosts').doc(postId).update({
+    await _firestore.collection('questions').doc(postId).update({
       'downvotes': FieldValue.increment(1),
     });
   }
@@ -142,7 +147,7 @@ class DatabaseService {
     required String replyContent,
   }) async {
     final repliesCollection = _firestore
-        .collection('forumPosts')
+        .collection('questions')
         .doc(postId)
         .collection('replies');
     return await repliesCollection.add({
@@ -163,7 +168,7 @@ class DatabaseService {
     Map<String, dynamic> data,
   ) async {
     await _firestore
-        .collection('forumPosts')
+        .collection('questions')
         .doc(postId)
         .collection('replies')
         .doc(replyId)
@@ -172,7 +177,7 @@ class DatabaseService {
 
   Future<void> deleteForumReply(String postId, String replyId) async {
     await _firestore
-        .collection('forumPosts')
+        .collection('questions')
         .doc(postId)
         .collection('replies')
         .doc(replyId)
@@ -181,7 +186,7 @@ class DatabaseService {
 
   Future<void> upvoteForumReply(String postId, String replyId) async {
     await _firestore
-        .collection('forumPosts')
+        .collection('questions')
         .doc(postId)
         .collection('replies')
         .doc(replyId)
@@ -190,7 +195,7 @@ class DatabaseService {
 
   Future<void> downvoteForumReply(String postId, String replyId) async {
     await _firestore
-        .collection('forumPosts')
+        .collection('questions')
         .doc(postId)
         .collection('replies')
         .doc(replyId)
@@ -204,7 +209,7 @@ class DatabaseService {
     required String reason,
   }) async {
     final reportsCollection = _firestore
-        .collection('forumPosts')
+        .collection('questions')
         .doc(postId)
         .collection('reports');
     return await reportsCollection.add({
@@ -222,7 +227,7 @@ class DatabaseService {
     required String reason,
   }) async {
     final reportsCollection = _firestore
-        .collection('forumPosts')
+        .collection('questions')
         .doc(postId)
         .collection('replies')
         .doc(replyId)
@@ -237,7 +242,7 @@ class DatabaseService {
 
   // --- Pin/Unpin Post ---
   Future<void> pinForumPost(String postId, bool isPinned) async {
-    await _firestore.collection('forumPosts').doc(postId).update({
+    await _firestore.collection('questions').doc(postId).update({
       'isPinned': isPinned,
     });
   }
@@ -804,6 +809,11 @@ class DatabaseService {
     await batch.commit();
   }
 
+  /// Public method to generate dummy FAQs for seeding the faqs collection
+  Future<void> generateDummyFAQs() async {
+    await _generateDummyFAQs();
+  }
+
   // --- Notifications (Admin Management) ---
   Future<void> sendNotificationToUser({
     required String userId,
@@ -1016,7 +1026,7 @@ class DatabaseService {
         .count()
         .get();
     final forumPostsCount = await _firestore
-        .collection('forumPosts')
+        .collection('questions')
         .count()
         .get();
     final notificationsCount = await _firestore
@@ -1062,7 +1072,7 @@ class DatabaseService {
 
     // Get user's forum posts
     final userPosts = await _firestore
-        .collection('forumPosts')
+        .collection('questions')
         .where('posterUserID', isEqualTo: studentId)
         .count()
         .get();
@@ -1104,7 +1114,7 @@ class DatabaseService {
 
     // Recent forum posts
     final recentPosts = await _firestore
-        .collection('forumPosts')
+        .collection('questions')
         .orderBy('timestamp', descending: true)
         .limit(limit ~/ 3)
         .get();
@@ -1165,7 +1175,7 @@ class DatabaseService {
   }
 
   Future<Map<String, dynamic>> getForumEngagementStats() async {
-    final totalPosts = await _firestore.collection('forumPosts').count().get();
+    final totalPosts = await _firestore.collection('questions').count().get();
     final totalReplies = await _firestore
         .collectionGroup('replies')
         .count()
@@ -1173,13 +1183,13 @@ class DatabaseService {
 
     // Get posts by type/category
     final academicPosts = await _firestore
-        .collection('forumPosts')
+        .collection('questions')
         .where('category', isEqualTo: 'Academic')
         .count()
         .get();
 
     final generalPosts = await _firestore
-        .collection('forumPosts')
+        .collection('questions')
         .where('category', isEqualTo: 'General')
         .count()
         .get();
@@ -1386,7 +1396,7 @@ class DatabaseService {
     ];
 
     for (var post in posts) {
-      final docRef = _firestore.collection('forumPosts').doc();
+      final docRef = _firestore.collection('questions').doc();
       batch.set(docRef, post);
     }
     await batch.commit();

@@ -185,9 +185,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF6EEDD),
       appBar: AppBar(
-        title: const Text(
-          'Notifications',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        title: const FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            'Notifications',
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          ),
         ),
         backgroundColor: const Color(0xFF0A2B6B),
         elevation: 0,

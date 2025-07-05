@@ -118,7 +118,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 children: [
                   Expanded(
                     child: _buildStatCard(
-                      'Forum Posts',
+                      'Questions',
                       '${stats['totalForumPosts'] ?? 0}',
                       Icons.forum,
                       Colors.indigo,

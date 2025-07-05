@@ -59,6 +59,9 @@ class _NotificationManagementScreenState
         appBar: AppBar(
           title: const Text('Send Notifications'),
           bottom: const TabBar(
+            indicatorColor: Color(0xFF003399),
+            labelColor: Color(0xFF003399),
+            unselectedLabelColor: Colors.black54,
             tabs: [
               Tab(text: 'Send Notification'),
               Tab(text: 'Templates'),
@@ -202,57 +205,16 @@ class _NotificationManagementScreenState
             value: selectedTarget,
             items: const [
               DropdownMenuItem(value: 'all', child: Text('All Students')),
-              DropdownMenuItem(value: 'category', child: Text('By Category')),
-              DropdownMenuItem(value: 'year', child: Text('By Year')),
+              DropdownMenuItem(value: 'year1', child: Text('Year 1')),
+              DropdownMenuItem(value: 'year2', child: Text('Year 2')),
+              DropdownMenuItem(value: 'year3', child: Text('Year 3')),
+              DropdownMenuItem(value: 'year4', child: Text('Year 4')),
             ],
             onChanged: (value) {
               setState(() => selectedTarget = value!);
             },
           ),
-          if (selectedTarget == 'category') ...[
-            const SizedBox(height: 16),
-            DropdownButtonFormField<String>(
-              decoration: const InputDecoration(
-                labelText: 'Category',
-                border: OutlineInputBorder(),
-              ),
-              value: selectedCategory,
-              items: const [
-                DropdownMenuItem(
-                  value: 'Computer Science',
-                  child: Text('Computer Science'),
-                ),
-                DropdownMenuItem(value: 'Business', child: Text('Business')),
-                DropdownMenuItem(
-                  value: 'Engineering',
-                  child: Text('Engineering'),
-                ),
-                DropdownMenuItem(value: 'Arts', child: Text('Arts')),
-              ],
-              onChanged: (value) {
-                setState(() => selectedCategory = value);
-              },
-            ),
-          ],
-          if (selectedTarget == 'year') ...[
-            const SizedBox(height: 16),
-            DropdownButtonFormField<String>(
-              decoration: const InputDecoration(
-                labelText: 'Year',
-                border: OutlineInputBorder(),
-              ),
-              value: selectedYear,
-              items: const [
-                DropdownMenuItem(value: '2024', child: Text('2024')),
-                DropdownMenuItem(value: '2023', child: Text('2023')),
-                DropdownMenuItem(value: '2022', child: Text('2022')),
-              ],
-              onChanged: (value) {
-                setState(() => selectedYear = value);
-              },
-            ),
-          ],
-          const SizedBox(height: 24),
+          const SizedBox(height: 32),
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
@@ -309,6 +271,19 @@ class _NotificationManagementScreenState
                   );
                 }
               },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF003399),
+                foregroundColor: Colors.white,
+                textStyle: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 18),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(24),
+                ),
+                elevation: 2,
+              ),
               child: const Text('Send Notification'),
             ),
           ),

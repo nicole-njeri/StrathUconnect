@@ -47,7 +47,7 @@ class _ForumModerationScreenState extends State<ForumModerationScreen> {
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance
-                  .collection('forumPosts')
+                  .collection('questions')
                   .orderBy('isPinned', descending: true)
                   .orderBy('timestamp', descending: true)
                   .snapshots(),
@@ -143,22 +143,63 @@ class _ForumModerationScreenState extends State<ForumModerationScreen> {
                   if (data['isFlagged'] == true || (data['flagCount'] ?? 0) > 0)
                     const Icon(Icons.flag, color: Colors.red, size: 18),
                   Expanded(
-                    child: Text(
-                      data['title'] ?? '',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          data['title'] ?? '',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                        FutureBuilder<DocumentSnapshot>(
+                          future: FirebaseFirestore.instance
+                              .collection('users')
+                              .doc(data['posterUserID'])
+                              .get(),
+                          builder: (context, snapshot) {
+                            if (!snapshot.hasData) return const SizedBox();
+                            final userData =
+                                snapshot.data!.data() as Map<String, dynamic>?;
+                            if (userData != null &&
+                                userData['banned'] == true) {
+                              return const Text(
+                                'User BANNED',
+                                style: TextStyle(
+                                  color: Colors.red,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12,
+                                ),
+                              );
+                            }
+                            return const SizedBox();
+                          },
+                        ),
+                      ],
                     ),
                   ),
                   PopupMenuButton<String>(
-                    onSelected: (value) {
+                    onSelected: (value) async {
                       if (value == 'edit') {
                         _showPostDialog(editPostId: postId, existing: data);
                       } else if (value == 'delete') {
                         _deletePost(postId);
                       } else if (value == 'pin') {
                         _db.pinForumPost(postId, !(data['isPinned'] == true));
+                      } else if (value == 'hide') {
+                        await FirebaseFirestore.instance
+                            .collection('questions')
+                            .doc(postId)
+                            .update({'hidden': !(data['hidden'] == true)});
+                      } else if (value == 'ban') {
+                        await _db.banUser(data['posterUserID']);
+                        setState(() {});
+                      } else if (value == 'reviewed') {
+                        await FirebaseFirestore.instance
+                            .collection('questions')
+                            .doc(postId)
+                            .update({'isFlagged': false, 'flagCount': 0});
                       }
                     },
                     itemBuilder: (context) => [
@@ -171,11 +212,33 @@ class _ForumModerationScreenState extends State<ForumModerationScreen> {
                         value: 'pin',
                         child: Text(data['isPinned'] == true ? 'Unpin' : 'Pin'),
                       ),
+                      PopupMenuItem(
+                        value: 'hide',
+                        child: Text(data['hidden'] == true ? 'Unhide' : 'Hide'),
+                      ),
+                      const PopupMenuItem(
+                        value: 'ban',
+                        child: Text('Ban User'),
+                      ),
+                      if (data['isFlagged'] == true ||
+                          (data['flagCount'] ?? 0) > 0)
+                        const PopupMenuItem(
+                          value: 'reviewed',
+                          child: Text('Mark as Reviewed'),
+                        ),
                     ],
                   ),
                 ],
               ),
               const SizedBox(height: 4),
+              if (data['hidden'] == true)
+                const Text(
+                  'This post is hidden',
+                  style: TextStyle(
+                    color: Colors.orange,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               Text(data['postContent'] ?? ''),
               const SizedBox(height: 8),
               Row(
@@ -190,10 +253,122 @@ class _ForumModerationScreenState extends State<ForumModerationScreen> {
                   ),
                 ],
               ),
+              const SizedBox(height: 8),
+              _buildReplies(postId),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildReplies(String postId) {
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('questions')
+          .doc(postId)
+          .collection('replies')
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          return const SizedBox();
+        }
+        final replies = snapshot.data!.docs;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: replies.map((doc) {
+            final data = doc.data() as Map<String, dynamic>;
+            return Card(
+              color: data['hidden'] == true ? Colors.orange[50] : null,
+              margin: const EdgeInsets.symmetric(vertical: 4),
+              child: ListTile(
+                title: Text(data['replyContent'] ?? ''),
+                subtitle: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    FutureBuilder<DocumentSnapshot>(
+                      future: FirebaseFirestore.instance
+                          .collection('users')
+                          .doc(data['replierUserID'])
+                          .get(),
+                      builder: (context, snapshot) {
+                        if (!snapshot.hasData) return const SizedBox();
+                        final userData =
+                            snapshot.data!.data() as Map<String, dynamic>?;
+                        if (userData != null && userData['banned'] == true) {
+                          return const Text(
+                            'User BANNED',
+                            style: TextStyle(
+                              color: Colors.red,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                            ),
+                          );
+                        }
+                        return const SizedBox();
+                      },
+                    ),
+                    if (data['hidden'] == true)
+                      const Text(
+                        'This reply is hidden',
+                        style: TextStyle(
+                          color: Colors.orange,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                  ],
+                ),
+                trailing: PopupMenuButton<String>(
+                  onSelected: (value) async {
+                    if (value == 'edit') {
+                      _showReplyDialog(postId, doc.id, existing: data);
+                    } else if (value == 'delete') {
+                      await FirebaseFirestore.instance
+                          .collection('questions')
+                          .doc(postId)
+                          .collection('replies')
+                          .doc(doc.id)
+                          .delete();
+                    } else if (value == 'hide') {
+                      await FirebaseFirestore.instance
+                          .collection('questions')
+                          .doc(postId)
+                          .collection('replies')
+                          .doc(doc.id)
+                          .update({'hidden': !(data['hidden'] == true)});
+                    } else if (value == 'ban') {
+                      await _db.banUser(data['replierUserID']);
+                      setState(() {});
+                    } else if (value == 'reviewed') {
+                      await FirebaseFirestore.instance
+                          .collection('questions')
+                          .doc(postId)
+                          .collection('replies')
+                          .doc(doc.id)
+                          .update({'isFlagged': false, 'flagCount': 0});
+                    }
+                  },
+                  itemBuilder: (context) => [
+                    const PopupMenuItem(value: 'edit', child: Text('Edit')),
+                    const PopupMenuItem(value: 'delete', child: Text('Delete')),
+                    PopupMenuItem(
+                      value: 'hide',
+                      child: Text(data['hidden'] == true ? 'Unhide' : 'Hide'),
+                    ),
+                    const PopupMenuItem(value: 'ban', child: Text('Ban User')),
+                    if (data['isFlagged'] == true ||
+                        (data['flagCount'] ?? 0) > 0)
+                      const PopupMenuItem(
+                        value: 'reviewed',
+                        child: Text('Mark as Reviewed'),
+                      ),
+                  ],
+                ),
+              ),
+            );
+          }).toList(),
+        );
+      },
     );
   }
 
@@ -307,6 +482,42 @@ class _ForumModerationScreenState extends State<ForumModerationScreen> {
       builder: (context) => CategoryManagerDialog(db: _db),
     );
   }
+
+  void _showReplyDialog(
+    String postId,
+    String replyId, {
+    Map<String, dynamic>? existing,
+  }) {
+    final controller = TextEditingController(
+      text: existing?['replyContent'] ?? '',
+    );
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Edit Reply'),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(labelText: 'Reply'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              if (controller.text.trim().isEmpty) return;
+              await _db.updateForumReply(postId, replyId, {
+                'replyContent': controller.text.trim(),
+              });
+              Navigator.pop(context);
+            },
+            child: const Text('Update'),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class AdminForumPostDetailSheet extends StatefulWidget {
@@ -371,7 +582,7 @@ class _AdminForumPostDetailSheetState extends State<AdminForumPostDetailSheet> {
                 ),
                 StreamBuilder<QuerySnapshot>(
                   stream: FirebaseFirestore.instance
-                      .collection('forumPosts')
+                      .collection('questions')
                       .doc(widget.postId)
                       .collection('replies')
                       .orderBy('timestamp', descending: false)

@@ -317,6 +317,13 @@ class _SupportFeedbackScreenState extends State<SupportFeedbackScreen> {
                 icon: const Icon(Icons.add),
                 label: const Text('Add FAQ'),
               ),
+              const SizedBox(width: 8),
+              ElevatedButton.icon(
+                onPressed: _generateDummyFAQs,
+                icon: const Icon(Icons.refresh),
+                label: const Text('Seed Dummy FAQs'),
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.indigo),
+              ),
             ],
           ),
         ),
@@ -836,6 +843,24 @@ class _SupportFeedbackScreenState extends State<SupportFeedbackScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error generating dummy data: $e')),
       );
+    }
+  }
+
+  Future<void> _generateDummyFAQs() async {
+    try {
+      await _db.generateDummyFAQs();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Dummy FAQs generated!')),
+        );
+        setState(() {}); // Refresh the FAQ list
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error generating FAQs: $e')),
+        );
+      }
     }
   }
 }
