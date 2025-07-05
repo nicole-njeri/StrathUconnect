@@ -809,6 +809,11 @@ class DatabaseService {
     await batch.commit();
   }
 
+  /// Public method to generate dummy FAQs for seeding the faqs collection
+  Future<void> generateDummyFAQs() async {
+    await _generateDummyFAQs();
+  }
+
   // --- Notifications (Admin Management) ---
   Future<void> sendNotificationToUser({
     required String userId,
