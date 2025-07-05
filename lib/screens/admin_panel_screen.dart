@@ -14,6 +14,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'dart:io';
 import 'package:strathapp/screens/login_screen.dart';
+import 'package:strathapp/services/database_service.dart';
 
 class AdminPanelScreen extends StatefulWidget {
   const AdminPanelScreen({super.key});
@@ -136,7 +137,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
     ];
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFFF6EEDD),
       appBar: AppBar(
         title: Row(
           mainAxisAlignment: MainAxisAlignment.start,
@@ -241,242 +242,265 @@ class _DashboardScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final List<Map<String, dynamic>> recentActivities = [
-      {
-        'icon': Icons.flag,
-        'text': 'John Doe reported a post',
-        'time': '2 hours ago',
-      },
-      {
-        'icon': Icons.person_add,
-        'text': 'New user registered: Jane Smith',
-        'time': '4 hours ago',
-      },
-      {
-        'icon': Icons.add_circle,
-        'text': 'Event "Study Group" created',
-        'time': '6 hours ago',
-      },
-    ];
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        return SingleChildScrollView(
-          padding: const EdgeInsets.all(0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header with gradient background (no logo, no welcome message)
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(
-                  vertical: 32,
-                  horizontal: 24,
-                ),
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      _AdminPanelScreenState.primaryBlue,
-                      Color(0xFF3A4B6A),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.only(
-                    bottomLeft: Radius.circular(32),
-                    bottomRight: Radius.circular(32),
-                  ),
-                ),
-                child: FutureBuilder<String?>(
-                  future: adminNameFuture,
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const SizedBox(height: 32);
-                    }
-                    final adminName = snapshot.data ?? 'Admin';
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Hello, $adminName!',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
+    final DatabaseService _db = DatabaseService();
+    return FutureBuilder<Map<String, dynamic>>(
+      future: _db.getAdminDashboardStats(),
+      builder: (context, statsSnapshot) {
+        return FutureBuilder<List<Map<String, dynamic>>>(
+          future: _db.getRecentActivity(limit: 6),
+          builder: (context, activitySnapshot) {
+            final stats = statsSnapshot.data ?? {};
+            final recentActivities = activitySnapshot.data ?? [];
+            return LayoutBuilder(
+              builder: (context, constraints) {
+                return SingleChildScrollView(
+                  padding: const EdgeInsets.all(0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Header with gradient background (no logo, no welcome message)
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 32,
+                          horizontal: 24,
+                        ),
+                        decoration: const BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              _AdminPanelScreenState.primaryBlue,
+                              Color(0xFF3A4B6A),
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.only(
+                            bottomLeft: Radius.circular(32),
+                            bottomRight: Radius.circular(32),
                           ),
                         ),
-                        const SizedBox(height: 6),
-                        const Text(
-                          'Here is your dashboard overview.',
-                          style: TextStyle(color: Colors.white70, fontSize: 16),
-                        ),
-                      ],
-                    );
-                  },
-                ),
-              ),
-              const SizedBox(height: 24),
-              // Summary Cards
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: SummaryCard(
-                        title: 'Total Students',
-                        value: '120',
-                        icon: Icons.people_outline,
-                        color: _AdminPanelScreenState.primaryBlue,
-                        iconColor: Colors.white,
-                        textColor: Colors.white,
-                      ),
-                    ),
-                    SizedBox(width: 16),
-                    Expanded(
-                      child: SummaryCard(
-                        title: 'Active Events',
-                        value: '45',
-                        icon: Icons.event_available,
-                        color: _AdminPanelScreenState.primaryRed,
-                        iconColor: Colors.white,
-                        textColor: Colors.white,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 32),
-              // Quick Actions
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Text(
-                  'Quick Actions',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    color: _AdminPanelScreenState.primaryBlue,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => const CreateEventScreen(),
-                            ),
-                          );
-                        },
-                        icon: const Icon(Icons.add, color: Colors.white),
-                        label: const Text('Create Event'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: _AdminPanelScreenState.primaryRed,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: () {},
-                        icon: const Icon(
-                          Icons.announcement,
-                          color: _AdminPanelScreenState.primaryBlue,
-                        ),
-                        label: const Text('Announcement'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          foregroundColor: _AdminPanelScreenState.primaryBlue,
-                          side: const BorderSide(
-                            color: _AdminPanelScreenState.primaryBlue,
-                            width: 2,
-                          ),
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 32),
-              // Recent Activity
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Text(
-                  'Recent Activity',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    color: _AdminPanelScreenState.primaryBlue,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Card(
-                  elevation: 2,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: ListView.separated(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    padding: const EdgeInsets.all(16),
-                    itemCount: recentActivities.length,
-                    separatorBuilder: (context, i) => const Divider(),
-                    itemBuilder: (context, index) {
-                      final activity = recentActivities[index];
-                      return Row(
-                        children: [
-                          CircleAvatar(
-                            backgroundColor: _AdminPanelScreenState.primaryBlue
-                                .withOpacity(0.1),
-                            child: Icon(
-                              activity['icon'],
-                              color: _AdminPanelScreenState.primaryBlue,
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
+                        child: FutureBuilder<String?>(
+                          future: adminNameFuture,
+                          builder: (context, snapshot) {
+                            if (snapshot.connectionState == ConnectionState.waiting) {
+                              return const SizedBox(height: 32);
+                            }
+                            final adminName = snapshot.data ?? 'Admin';
+                            return Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  activity['text'],
+                                  'Hello, $adminName!',
                                   style: const TextStyle(
-                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white,
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.bold,
                                   ),
                                 ),
-                                Text(
-                                  activity['time'],
-                                  style: const TextStyle(
-                                    color: Colors.grey,
-                                    fontSize: 12,
-                                  ),
+                                const SizedBox(height: 6),
+                                const Text(
+                                  'Here is your dashboard overview.',
+                                  style: TextStyle(color: Colors.white70, fontSize: 16),
                                 ),
                               ],
+                            );
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      // Summary Cards
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: SummaryCard(
+                                title: 'Total Students',
+                                value: stats['totalStudents']?.toString() ?? '-',
+                                icon: Icons.people_outline,
+                                color: _AdminPanelScreenState.primaryBlue,
+                                iconColor: Colors.white,
+                                textColor: Colors.white,
+                              ),
                             ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: SummaryCard(
+                                title: 'Active Events',
+                                value: stats['activeEvents']?.toString() ?? '-',
+                                icon: Icons.event_available,
+                                color: _AdminPanelScreenState.primaryRed,
+                                iconColor: Colors.white,
+                                textColor: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 32),
+                      // Quick Actions
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Text(
+                          'Quick Actions',
+                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            color: _AdminPanelScreenState.primaryBlue,
+                            fontWeight: FontWeight.bold,
                           ),
-                        ],
-                      );
-                    },
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: ElevatedButton.icon(
+                                onPressed: () {
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (_) => const CreateEventScreen(),
+                                    ),
+                                  );
+                                },
+                                icon: const Icon(Icons.add, color: Colors.white),
+                                label: const Text('Create Event'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: _AdminPanelScreenState.primaryRed,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(vertical: 16),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: ElevatedButton.icon(
+                                onPressed: () {},
+                                icon: const Icon(
+                                  Icons.announcement,
+                                  color: _AdminPanelScreenState.primaryBlue,
+                                ),
+                                label: const Text('Announcement'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.white,
+                                  foregroundColor: _AdminPanelScreenState.primaryBlue,
+                                  side: const BorderSide(
+                                    color: _AdminPanelScreenState.primaryBlue,
+                                    width: 2,
+                                  ),
+                                  padding: const EdgeInsets.symmetric(vertical: 16),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 32),
+                      // Recent Activity
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Text(
+                          'Recent Activity',
+                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            color: _AdminPanelScreenState.primaryBlue,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Card(
+                          elevation: 2,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: ListView.separated(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            padding: const EdgeInsets.all(16),
+                            itemCount: recentActivities.length,
+                            separatorBuilder: (context, i) => const Divider(),
+                            itemBuilder: (context, index) {
+                              final activity = recentActivities[index];
+                              return Row(
+                                children: [
+                                  CircleAvatar(
+                                    backgroundColor: _AdminPanelScreenState.primaryBlue.withOpacity(0.1),
+                                    child: Icon(
+                                      activity['type'] == 'forum_post'
+                                          ? Icons.forum
+                                          : activity['type'] == 'event'
+                                              ? Icons.event
+                                              : Icons.notifications,
+                                      color: _AdminPanelScreenState.primaryBlue,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          activity['title'] ?? '',
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                        if (activity['description'] != null && activity['description'].toString().isNotEmpty)
+                                          Text(
+                                            activity['description'],
+                                            style: const TextStyle(
+                                              color: Colors.grey,
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                        if (activity['userEmail'] != null)
+                                          Text(
+                                            'By: ${activity['userEmail']}',
+                                            style: const TextStyle(
+                                              color: Colors.grey,
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                        if (activity['organizer'] != null)
+                                          Text(
+                                            'Organizer: ${activity['organizer']}',
+                                            style: const TextStyle(
+                                              color: Colors.grey,
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                        if (activity['priority'] != null)
+                                          Text(
+                                            'Priority: ${activity['priority']}',
+                                            style: const TextStyle(
+                                              color: Colors.grey,
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              );
+                            },
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 32),
+                    ],
                   ),
-                ),
-              ),
-              const SizedBox(height: 32),
-            ],
-          ),
+                );
+              },
+            );
+          },
         );
       },
     );

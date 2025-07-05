@@ -23,10 +23,17 @@ class _AskQuestionScreenState extends State<AskQuestionScreen> {
     try {
       final user = _authService.currentUser;
       await FirebaseFirestore.instance.collection('questions').add({
-        'question': _questionController.text.trim(),
-        'userId': user?.uid,
-        'userEmail': user?.email,
+        'title': _questionController.text.trim(),
+        'postContent': _questionController.text.trim(),
+        'posterUserID': user?.uid,
+        'posterEmail': user?.email,
         'timestamp': FieldValue.serverTimestamp(),
+        'category': 'General',
+        'upvotes': 0,
+        'downvotes': 0,
+        'isPinned': false,
+        'isFlagged': false,
+        'flagCount': 0,
       });
       _questionController.clear();
       ScaffoldMessenger.of(
