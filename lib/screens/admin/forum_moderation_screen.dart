@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:strathapp/services/database_service.dart';
+import 'package:strathapp/screens/admin_panel_screen.dart';
 
 class ForumModerationScreen extends StatefulWidget {
   const ForumModerationScreen({super.key});
@@ -18,21 +19,36 @@ class _ForumModerationScreenState extends State<ForumModerationScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF6EEDD),
       appBar: AppBar(
-        title: const Text('Forum Moderation'),
+        backgroundColor: const Color(0xFF0A2B6B),
+        title: const Text(
+          'Forum Management',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () {
+            Navigator.of(context).pushAndRemoveUntil(
+              MaterialPageRoute(builder: (context) => const AdminPanelScreen()),
+              (route) => false,
+            );
+          },
+        ),
+        iconTheme: const IconThemeData(color: Colors.white),
         actions: [
           IconButton(
-            icon: Icon(_showFlagged ? Icons.flag : Icons.outlined_flag),
+            icon: Icon(_showFlagged ? Icons.flag : Icons.outlined_flag, color: Colors.white),
             tooltip: _showFlagged ? 'Show All' : 'Show Flagged',
             onPressed: () => setState(() => _showFlagged = !_showFlagged),
           ),
           IconButton(
-            icon: Icon(_showPinned ? Icons.push_pin : Icons.push_pin_outlined),
+            icon: Icon(_showPinned ? Icons.push_pin : Icons.push_pin_outlined, color: Colors.white),
             tooltip: _showPinned ? 'Show All' : 'Show Pinned',
             onPressed: () => setState(() => _showPinned = !_showPinned),
           ),
           IconButton(
-            icon: const Icon(Icons.category),
+            icon: const Icon(Icons.category, color: Colors.white),
             tooltip: 'Manage Categories',
             onPressed: _showCategoryManager,
           ),
@@ -72,7 +88,8 @@ class _ForumModerationScreenState extends State<ForumModerationScreen> {
                           (data['flagCount'] ?? 0) > 0);
                   final matchesPinned =
                       !_showPinned || (data['isPinned'] == true);
-                  return matchesCategory && matchesFlagged && matchesPinned;
+                  final isVisible = data['hidden'] != true;
+                  return matchesCategory && matchesFlagged && matchesPinned && isVisible;
                 }).toList();
                 if (posts.isEmpty) {
                   return const Center(child: Text('No posts found.'));
@@ -101,20 +118,20 @@ class _ForumModerationScreenState extends State<ForumModerationScreen> {
           .collection('forumCategories')
           .snapshots(),
       builder: (context, snapshot) {
-        final categories = <String>[''];
+        final categories = <String>[];
         if (snapshot.hasData) {
           categories.addAll(
             snapshot.data!.docs.map((d) => d['name'] as String),
           );
         }
         return DropdownButton<String>(
-          value: _selectedCategory ?? '',
+          value: categories.contains(_selectedCategory) ? _selectedCategory : null,
           hint: const Text('Category'),
           items: categories
               .map(
                 (cat) => DropdownMenuItem(
                   value: cat,
-                  child: Text(cat.isEmpty ? 'All' : cat),
+                  child: Text(cat),
                 ),
               )
               .toList(),

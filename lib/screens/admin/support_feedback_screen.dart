@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:strathapp/services/database_service.dart';
 import 'package:strathapp/services/auth_service.dart';
+import 'package:strathapp/screens/admin_panel_screen.dart';
 
 class SupportFeedbackScreen extends StatefulWidget {
   const SupportFeedbackScreen({super.key});
@@ -20,8 +21,23 @@ class _SupportFeedbackScreenState extends State<SupportFeedbackScreen> {
     return DefaultTabController(
       length: 4,
       child: Scaffold(
+        backgroundColor: const Color(0xFFF6EEDD),
         appBar: AppBar(
-          title: const Text('Support & Feedback'),
+          backgroundColor: const Color(0xFF0A2B6B),
+          title: const Text(
+            'Support & Feedback',
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          ),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: Colors.white),
+            onPressed: () {
+              Navigator.of(context).pushAndRemoveUntil(
+                MaterialPageRoute(builder: (context) => const AdminPanelScreen()),
+                (route) => false,
+              );
+            },
+          ),
+          iconTheme: const IconThemeData(color: Colors.white),
           bottom: const TabBar(
             tabs: [
               Tab(text: 'FAQs'),
@@ -32,7 +48,7 @@ class _SupportFeedbackScreenState extends State<SupportFeedbackScreen> {
           ),
           actions: [
             IconButton(
-              icon: const Icon(Icons.data_usage),
+              icon: const Icon(Icons.data_usage, color: Colors.white),
               tooltip: 'Generate Dummy Data',
               onPressed: _generateDummyData,
             ),

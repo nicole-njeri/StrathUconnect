@@ -276,9 +276,9 @@ class _DashboardScreen extends StatelessWidget {
                     const SizedBox(width: 16),
                     Expanded(
                       child: _SummaryCard(
-                        icon: Icons.forum,
-                        label: 'Active Forum Posts',
-                        value: stats['activeForumPosts']?.toString() ?? '[Y]',
+                        icon: Icons.event,
+                        label: 'Active Events',
+                        value: stats['activeEvents']?.toString() ?? '[Y]',
                         color: Color(0xFFEAF3FF),
                         iconColor: Color(0xFF0A2B6B),
                       ),

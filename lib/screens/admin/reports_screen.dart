@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:strathapp/services/database_service.dart';
+import 'package:strathapp/screens/admin_panel_screen.dart';
 
 class ReportsScreen extends StatefulWidget {
   const ReportsScreen({super.key});
@@ -20,7 +21,21 @@ class _ReportsScreenState extends State<ReportsScreen> {
       child: Scaffold(
         backgroundColor: const Color(0xFFF6EEDD),
         appBar: AppBar(
-          title: const Text('Reports & Analytics'),
+          backgroundColor: const Color(0xFF0A2B6B),
+          title: const Text(
+            'Reports',
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          ),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: Colors.white),
+            onPressed: () {
+              Navigator.of(context).pushAndRemoveUntil(
+                MaterialPageRoute(builder: (context) => const AdminPanelScreen()),
+                (route) => false,
+              );
+            },
+          ),
+          iconTheme: const IconThemeData(color: Colors.white),
           bottom: const TabBar(
             tabs: [
               Tab(text: 'Overview'),
@@ -31,7 +46,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
           ),
           actions: [
             IconButton(
-              icon: const Icon(Icons.data_usage),
+              icon: const Icon(Icons.data_usage, color: Colors.white),
               tooltip: 'Generate Dummy Data',
               onPressed: _generateDummyData,
             ),

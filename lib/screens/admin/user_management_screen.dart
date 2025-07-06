@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:strathapp/screens/admin/user_detail_screen.dart';
+import 'package:strathapp/screens/admin_panel_screen.dart';
 
 class UserManagementScreen extends StatelessWidget {
   const UserManagementScreen({super.key});
@@ -27,6 +28,23 @@ class UserManagementScreen extends StatelessWidget {
 
         return Scaffold(
           backgroundColor: const Color(0xFFF6EEDD),
+          appBar: AppBar(
+            backgroundColor: const Color(0xFF0A2B6B),
+            title: const Text(
+              'User Management',
+              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            ),
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back, color: Colors.white),
+              onPressed: () {
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (context) => const AdminPanelScreen()),
+                  (route) => false,
+                );
+              },
+            ),
+            iconTheme: const IconThemeData(color: Colors.white),
+          ),
           body: ListView.builder(
             itemCount: users.length,
             itemBuilder: (context, index) {

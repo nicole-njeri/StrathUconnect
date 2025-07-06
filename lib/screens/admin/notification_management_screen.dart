@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:strathapp/services/database_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:strathapp/screens/admin_panel_screen.dart';
 
 class NotificationManagementScreen extends StatefulWidget {
   const NotificationManagementScreen({super.key});
@@ -58,7 +59,21 @@ class _NotificationManagementScreenState
       child: Scaffold(
         backgroundColor: const Color(0xFFF6EEDD),
         appBar: AppBar(
-          title: const Text('Send Notifications'),
+          backgroundColor: const Color(0xFF0A2B6B),
+          title: const Text(
+            'Notifications Management',
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          ),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: Colors.white),
+            onPressed: () {
+              Navigator.of(context).pushAndRemoveUntil(
+                MaterialPageRoute(builder: (context) => const AdminPanelScreen()),
+                (route) => false,
+              );
+            },
+          ),
+          iconTheme: const IconThemeData(color: Colors.white),
           bottom: const TabBar(
             indicatorColor: Color(0xFF003399),
             labelColor: Color(0xFF003399),
