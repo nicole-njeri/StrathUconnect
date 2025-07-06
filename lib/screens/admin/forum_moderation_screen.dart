@@ -39,33 +39,15 @@ class _ForumModerationScreenState extends State<ForumModerationScreen> {
         iconTheme: const IconThemeData(color: Colors.white),
         actions: [
           IconButton(
-            icon: Icon(_showFlagged ? Icons.flag : Icons.outlined_flag, color: Colors.white),
-            tooltip: _showFlagged ? 'Show All' : 'Show Flagged',
-            onPressed: () => setState(() => _showFlagged = !_showFlagged),
-          ),
-          IconButton(
-            icon: Icon(_showPinned ? Icons.push_pin : Icons.push_pin_outlined, color: Colors.white),
-            tooltip: _showPinned ? 'Show All' : 'Show Pinned',
-            onPressed: () => setState(() => _showPinned = !_showPinned),
-          ),
-          IconButton(
             icon: Icon(_showReports ? Icons.flag : Icons.outlined_flag),
             tooltip: _showReports ? 'Show Posts' : 'Show Reports',
             onPressed: () => setState(() => _showReports = !_showReports),
-          ),
-          IconButton(
-            icon: const Icon(Icons.category, color: Colors.white),
-            tooltip: 'Manage Categories',
-            onPressed: _showCategoryManager,
           ),
         ],
       ),
       body: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.all(12.0),
-            child: Row(children: [_buildCategoryDropdown()]),
-          ),
+          // Removed category dropdown
           Expanded(
             child: _showReports
                 ? StreamBuilder<QuerySnapshot>(
@@ -191,23 +173,8 @@ class _ForumModerationScreenState extends State<ForumModerationScreen> {
                         );
                       }
                       final docs = snapshot.data?.docs ?? [];
-                      var posts = docs.where((doc) {
-                        final data = doc.data() as Map<String, dynamic>;
-                        final category = (data['category'] ?? '').toString();
-                        final matchesCategory =
-                            _selectedCategory == null ||
-                            _selectedCategory == '' ||
-                            category == _selectedCategory;
-                        final matchesFlagged =
-                            !_showFlagged ||
-                            (data['isFlagged'] == true ||
-                                (data['flagCount'] ?? 0) > 0);
-                        final matchesPinned =
-                            !_showPinned || (data['isPinned'] == true);
-                        return matchesCategory &&
-                            matchesFlagged &&
-                            matchesPinned;
-                      }).toList();
+                      // Remove category filter logic
+                      var posts = docs.toList();
                       if (posts.isEmpty) {
                         return const Center(child: Text('No posts found.'));
                       }
@@ -230,34 +197,7 @@ class _ForumModerationScreenState extends State<ForumModerationScreen> {
     );
   }
 
-  Widget _buildCategoryDropdown() {
-    return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('forumCategories')
-          .snapshots(),
-      builder: (context, snapshot) {
-        final categories = <String>[];
-        if (snapshot.hasData) {
-          categories.addAll(
-            snapshot.data!.docs.map((d) => d['name'] as String),
-          );
-        }
-        return DropdownButton<String>(
-          value: categories.contains(_selectedCategory) ? _selectedCategory : null,
-          hint: const Text('Category'),
-          items: categories
-              .map(
-                (cat) => DropdownMenuItem(
-                  value: cat,
-                  child: Text(cat),
-                ),
-              )
-              .toList(),
-          onChanged: (val) => setState(() => _selectedCategory = val),
-        );
-      },
-    );
-  }
+  // Removed _buildCategoryDropdown
 
   Widget _buildPostCard(String postId, Map<String, dynamic> data) {
     return Card(
@@ -273,10 +213,7 @@ class _ForumModerationScreenState extends State<ForumModerationScreen> {
             children: [
               Row(
                 children: [
-                  if (data['isPinned'] == true)
-                    const Icon(Icons.push_pin, color: Colors.orange, size: 18),
-                  if (data['isFlagged'] == true || (data['flagCount'] ?? 0) > 0)
-                    const Icon(Icons.flag, color: Colors.red, size: 18),
+                  // Removed pinned and flagged icons
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -382,10 +319,7 @@ class _ForumModerationScreenState extends State<ForumModerationScreen> {
                   const SizedBox(width: 12),
                   Text('Downvotes: ${data['downvotes'] ?? 0}'),
                   const Spacer(),
-                  Text(
-                    data['category'] ?? '',
-                    style: const TextStyle(color: Colors.grey),
-                  ),
+                  // Removed category display
                 ],
               ),
               const SizedBox(height: 8),
@@ -587,7 +521,12 @@ class _ForumModerationScreenState extends State<ForumModerationScreen> {
           value: selected,
           hint: const Text('Category'),
           items: categories
-              .map((cat) => DropdownMenuItem(value: cat, child: Text(cat)))
+              .map(
+                (cat) => DropdownMenuItem(
+                  value: cat,
+                  child: Text(cat),
+                ),
+              )
               .toList(),
           onChanged: onChanged,
         );

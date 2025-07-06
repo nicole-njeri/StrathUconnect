@@ -236,7 +236,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
           ),
         ],
       ),
-      drawer: _buildDrawer(),
+      // Removed drawer
       body: pages[_selectedPageIndex],
     );
   }
