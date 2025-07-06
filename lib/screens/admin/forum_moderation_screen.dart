@@ -14,6 +14,7 @@ class _ForumModerationScreenState extends State<ForumModerationScreen> {
   String? _selectedCategory;
   bool _showFlagged = false;
   bool _showPinned = false;
+  bool _showReports = false;
 
   @override
   Widget build(BuildContext context) {
@@ -32,6 +33,11 @@ class _ForumModerationScreenState extends State<ForumModerationScreen> {
             onPressed: () => setState(() => _showPinned = !_showPinned),
           ),
           IconButton(
+            icon: Icon(_showReports ? Icons.flag : Icons.outlined_flag),
+            tooltip: _showReports ? 'Show Posts' : 'Show Reports',
+            onPressed: () => setState(() => _showReports = !_showReports),
+          ),
+          IconButton(
             icon: const Icon(Icons.category),
             tooltip: 'Manage Categories',
             onPressed: _showCategoryManager,
@@ -45,50 +51,163 @@ class _ForumModerationScreenState extends State<ForumModerationScreen> {
             child: Row(children: [_buildCategoryDropdown()]),
           ),
           Expanded(
-            child: StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection('questions')
-                  .orderBy('isPinned', descending: true)
-                  .orderBy('timestamp', descending: true)
-                  .snapshots(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                if (snapshot.hasError) {
-                  return Center(child: Text('Error: \\${snapshot.error}'));
-                }
-                final docs = snapshot.data?.docs ?? [];
-                var posts = docs.where((doc) {
-                  final data = doc.data() as Map<String, dynamic>;
-                  final category = (data['category'] ?? '').toString();
-                  final matchesCategory =
-                      _selectedCategory == null ||
-                      _selectedCategory == '' ||
-                      category == _selectedCategory;
-                  final matchesFlagged =
-                      !_showFlagged ||
-                      (data['isFlagged'] == true ||
-                          (data['flagCount'] ?? 0) > 0);
-                  final matchesPinned =
-                      !_showPinned || (data['isPinned'] == true);
-                  return matchesCategory && matchesFlagged && matchesPinned;
-                }).toList();
-                if (posts.isEmpty) {
-                  return const Center(child: Text('No posts found.'));
-                }
-                return ListView.separated(
-                  padding: const EdgeInsets.all(12),
-                  itemCount: posts.length,
-                  separatorBuilder: (context, i) => const SizedBox(height: 10),
-                  itemBuilder: (context, i) {
-                    final doc = posts[i];
-                    final data = doc.data() as Map<String, dynamic>;
-                    return _buildPostCard(doc.id, data);
-                  },
-                );
-              },
-            ),
+            child: _showReports
+                ? StreamBuilder<QuerySnapshot>(
+                    stream: FirebaseFirestore.instance
+                        .collection('reports')
+                        .orderBy('timestamp', descending: true)
+                        .snapshots(),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+                      if (snapshot.hasError) {
+                        return Center(
+                          child: Text('Error: \\${snapshot.error}'),
+                        );
+                      }
+                      final docs = snapshot.data?.docs ?? [];
+                      if (docs.isEmpty) {
+                        return const Center(child: Text('No reports found.'));
+                      }
+                      return ListView.separated(
+                        padding: const EdgeInsets.all(12),
+                        itemCount: docs.length,
+                        separatorBuilder: (context, i) =>
+                            const SizedBox(height: 10),
+                        itemBuilder: (context, i) {
+                          final doc = docs[i];
+                          final data = doc.data() as Map<String, dynamic>;
+                          return FutureBuilder<Map<String, dynamic>?>(
+                            future: _fetchReportedContent(data),
+                            builder: (context, contentSnapshot) {
+                              final content = contentSnapshot.data;
+                              return Card(
+                                elevation: 2,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(16.0),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Icon(
+                                            data['postType'] == 'question'
+                                                ? Icons.forum
+                                                : Icons.comment,
+                                            color: Colors.red,
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Text(
+                                            data['postType'] == 'question'
+                                                ? 'Question'
+                                                : 'Answer',
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                          const Spacer(),
+                                          Text(
+                                            data['timestamp'] != null
+                                                ? (data['timestamp']
+                                                          as Timestamp)
+                                                      .toDate()
+                                                      .toLocal()
+                                                      .toString()
+                                                      .substring(0, 16)
+                                                : '',
+                                            style: const TextStyle(
+                                              color: Colors.grey,
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        'Reason: ${data['reason']}',
+                                        style: const TextStyle(
+                                          color: Colors.red,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        'Reported by: ${data['reportedBy'] ?? 'Anonymous'}',
+                                        style: const TextStyle(
+                                          color: Colors.grey,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      if (content != null)
+                                        Text(
+                                          'Content: ${content['text']}',
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                          );
+                        },
+                      );
+                    },
+                  )
+                : StreamBuilder<QuerySnapshot>(
+                    stream: FirebaseFirestore.instance
+                        .collection('questions')
+                        .orderBy('isPinned', descending: true)
+                        .orderBy('timestamp', descending: true)
+                        .snapshots(),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+                      if (snapshot.hasError) {
+                        return Center(
+                          child: Text('Error: \\${snapshot.error}'),
+                        );
+                      }
+                      final docs = snapshot.data?.docs ?? [];
+                      var posts = docs.where((doc) {
+                        final data = doc.data() as Map<String, dynamic>;
+                        final category = (data['category'] ?? '').toString();
+                        final matchesCategory =
+                            _selectedCategory == null ||
+                            _selectedCategory == '' ||
+                            category == _selectedCategory;
+                        final matchesFlagged =
+                            !_showFlagged ||
+                            (data['isFlagged'] == true ||
+                                (data['flagCount'] ?? 0) > 0);
+                        final matchesPinned =
+                            !_showPinned || (data['isPinned'] == true);
+                        return matchesCategory &&
+                            matchesFlagged &&
+                            matchesPinned;
+                      }).toList();
+                      if (posts.isEmpty) {
+                        return const Center(child: Text('No posts found.'));
+                      }
+                      return ListView.separated(
+                        padding: const EdgeInsets.all(12),
+                        itemCount: posts.length,
+                        separatorBuilder: (context, i) =>
+                            const SizedBox(height: 10),
+                        itemBuilder: (context, i) {
+                          final doc = posts[i];
+                          final data = doc.data() as Map<String, dynamic>;
+                          return _buildPostCard(doc.id, data);
+                        },
+                      );
+                    },
+                  ),
           ),
         ],
       ),
@@ -517,6 +636,40 @@ class _ForumModerationScreenState extends State<ForumModerationScreen> {
         ],
       ),
     );
+  }
+
+  Future<Map<String, dynamic>?> _fetchReportedContent(
+    Map<String, dynamic> data,
+  ) async {
+    try {
+      if (data['postType'] == 'question') {
+        // Fetch the question document
+        final doc = await FirebaseFirestore.instance
+            .collection('questions')
+            .doc(data['postId'])
+            .get();
+        if (doc.exists) {
+          final q = doc.data() as Map<String, dynamic>;
+          return {'text': q['title'] ?? q['postContent'] ?? '[No content]'};
+        }
+      } else if (data['postType'] == 'answer') {
+        // Fetch the answer document
+        final answerDoc = await FirebaseFirestore.instance
+            .collection('questions')
+            .doc(data['postId'])
+            .collection('answers')
+            .doc(data['answerId'])
+            .get();
+        if (answerDoc.exists) {
+          final a = answerDoc.data() as Map<String, dynamic>;
+          return {'text': a['answer'] ?? '[No content]'};
+        }
+      }
+    } catch (e) {
+      // Optionally log error
+      return {'text': '[Error loading content]'};
+    }
+    return {'text': '[Content not found]'};
   }
 }
 

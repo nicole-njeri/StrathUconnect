@@ -161,23 +161,83 @@ class _QuestionDetailScreenState extends State<QuestionDetailScreen> {
                                       size: 20,
                                     ),
                                     tooltip: 'Report',
-                                    onPressed: () {
-                                      showDialog(
+                                    onPressed: () async {
+                                      final TextEditingController
+                                      _reasonController =
+                                          TextEditingController();
+                                      final result = await showDialog<String>(
                                         context: context,
                                         builder: (context) => AlertDialog(
                                           title: const Text('Report Answer'),
-                                          content: const Text(
-                                            'Feature coming soon.',
+                                          content: Column(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              const Text(
+                                                'Why are you reporting this answer?',
+                                              ),
+                                              const SizedBox(height: 12),
+                                              TextField(
+                                                controller: _reasonController,
+                                                decoration:
+                                                    const InputDecoration(
+                                                      labelText: 'Reason',
+                                                      border:
+                                                          OutlineInputBorder(),
+                                                    ),
+                                                minLines: 2,
+                                                maxLines: 4,
+                                              ),
+                                            ],
                                           ),
                                           actions: [
                                             TextButton(
                                               onPressed: () =>
                                                   Navigator.pop(context),
-                                              child: const Text('OK'),
+                                              child: const Text('Cancel'),
+                                            ),
+                                            ElevatedButton(
+                                              onPressed: () {
+                                                if (_reasonController.text
+                                                    .trim()
+                                                    .isNotEmpty) {
+                                                  Navigator.pop(
+                                                    context,
+                                                    _reasonController.text
+                                                        .trim(),
+                                                  );
+                                                }
+                                              },
+                                              child: const Text('Submit'),
                                             ),
                                           ],
                                         ),
                                       );
+                                      if (result != null && result.isNotEmpty) {
+                                        final user =
+                                            FirebaseAuth.instance.currentUser;
+                                        await FirebaseFirestore.instance
+                                            .collection('reports')
+                                            .add({
+                                              'postType': 'answer',
+                                              'postId': widget.questionId,
+                                              'answerId': doc.id,
+                                              'reportedBy':
+                                                  user?.email ?? 'Anonymous',
+                                              'reportedById': user?.uid ?? '',
+                                              'reason': result,
+                                              'timestamp':
+                                                  FieldValue.serverTimestamp(),
+                                            });
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          const SnackBar(
+                                            content: Text(
+                                              'Thank you for your report.',
+                                            ),
+                                          ),
+                                        );
+                                      }
                                     },
                                   ),
                                 ],
