@@ -18,6 +18,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
     return DefaultTabController(
       length: 4,
       child: Scaffold(
+        backgroundColor: const Color(0xFFF6EEDD),
         appBar: AppBar(
           title: const Text('Reports & Analytics'),
           bottom: const TabBar(

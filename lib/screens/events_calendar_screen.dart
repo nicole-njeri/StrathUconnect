@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
+import '../widgets/shared_navigation_bar.dart';
 
 class EventsCalendarScreen extends StatefulWidget {
   const EventsCalendarScreen({super.key});
@@ -10,6 +11,7 @@ class EventsCalendarScreen extends StatefulWidget {
 }
 
 class _EventsCalendarScreenState extends State<EventsCalendarScreen> {
+  int _currentIndex = 0;
   // Example event data
   final List<Map<String, dynamic>> eventSections = [
     {
@@ -127,6 +129,14 @@ class _EventsCalendarScreenState extends State<EventsCalendarScreen> {
               ],
             ),
           );
+        },
+      ),
+      bottomNavigationBar: SharedNavigationBar(
+        currentIndex: _currentIndex,
+        onTap: (index) {
+          setState(() {
+            _currentIndex = index;
+          });
         },
       ),
     );

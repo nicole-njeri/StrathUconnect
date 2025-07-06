@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import '../services/notification_service.dart';
 import 'notification_settings_screen.dart';
+import '../widgets/shared_navigation_bar.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -16,6 +17,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   bool _isLoading = true;
   String? _error;
   String? _currentUserId;
+  int _currentIndex = 2;
 
   // Real notifications from Firestore
   final List<Map<String, dynamic>> _notifications = [];
@@ -372,6 +374,14 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 );
               },
             ),
+      bottomNavigationBar: SharedNavigationBar(
+        currentIndex: _currentIndex,
+        onTap: (index) {
+          setState(() {
+            _currentIndex = index;
+          });
+        },
+      ),
     );
   }
 }

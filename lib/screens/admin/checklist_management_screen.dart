@@ -67,6 +67,7 @@ class _ChecklistManagementScreenState extends State<ChecklistManagementScreen> {
     return DefaultTabController(
       length: 2,
       child: Scaffold(
+        backgroundColor: const Color(0xFFF6EEDD),
         appBar: AppBar(
           title: const Text('Onboarding Checklists'),
           bottom: const TabBar(

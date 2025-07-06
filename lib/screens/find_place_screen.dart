@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import '../widgets/shared_navigation_bar.dart';
 
 class FindPlaceScreen extends StatefulWidget {
   const FindPlaceScreen({super.key});
@@ -15,6 +16,7 @@ class _FindPlaceScreenState extends State<FindPlaceScreen> {
 
   final TextEditingController _searchController = TextEditingController();
   final MapController _mapController = MapController();
+  int _currentIndex = 0;
 
   LatLng? _userLocation;
   LatLng? _destination;
@@ -520,9 +522,17 @@ class _FindPlaceScreenState extends State<FindPlaceScreen> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-              ),
-            ),
+                          ),
+          ),
         ],
+      ),
+      bottomNavigationBar: SharedNavigationBar(
+        currentIndex: _currentIndex,
+        onTap: (index) {
+          setState(() {
+            _currentIndex = index;
+          });
+        },
       ),
     );
   }
