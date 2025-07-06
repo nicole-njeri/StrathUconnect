@@ -105,7 +105,7 @@ class _ChecklistScreenState extends State<ChecklistScreen> {
                             if (templateName.isNotEmpty) ...[
                               const SizedBox(height: 4),
                               Text(
-                                'Template: $templateName',
+                                templateName,
                                 style: const TextStyle(color: Colors.grey),
                               ),
                             ],

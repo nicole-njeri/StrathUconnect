@@ -5,7 +5,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'find_place_screen.dart';
 import 'ask_question_screen.dart';
 import 'checklist_screen.dart';
-import 'campus_updates_screen.dart';
 import 'events_calendar_screen.dart';
 import 'resources_screen.dart';
 import 'notifications_screen.dart';

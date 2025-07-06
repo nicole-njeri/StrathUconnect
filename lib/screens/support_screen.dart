@@ -21,10 +21,7 @@ class _SupportScreenState extends State<SupportScreen> {
       child: Scaffold(
         backgroundColor: const Color(0xFFF6EEDD),
         appBar: AppBar(
-          title: const Text(
-            'Support & Help',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-          ),
+          title: const Text('Support & Help'),
           bottom: const TabBar(
             tabs: [
               Tab(text: 'FAQs'),
