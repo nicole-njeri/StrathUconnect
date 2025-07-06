@@ -49,7 +49,7 @@ class _HomeScreenState extends State<HomeScreen> {
     },
     {
       'icon': Icons.support_agent,
-      'title': 'Support & Help',
+      'title': 'FAQs and Feedback',
       'screen': const SupportScreen(),
     },
   ];

@@ -17,15 +17,14 @@ class _SupportScreenState extends State<SupportScreen> {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 3,
+      length: 2,
       child: Scaffold(
         backgroundColor: const Color(0xFFF6EEDD),
         appBar: AppBar(
-          title: const Text('Support & Help'),
+          title: const Text('FAQs and Feedback'),
           bottom: const TabBar(
             tabs: [
               Tab(text: 'FAQs'),
-              Tab(text: 'Support Ticket'),
               Tab(text: 'Feedback'),
             ],
           ),
@@ -33,7 +32,6 @@ class _SupportScreenState extends State<SupportScreen> {
         body: TabBarView(
           children: [
             _buildFAQTab(),
-            _buildSupportTicketTab(),
             _buildFeedbackTab(),
           ],
         ),
@@ -153,187 +151,6 @@ class _SupportScreenState extends State<SupportScreen> {
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildSupportTicketTab() {
-    final subjectController = TextEditingController();
-    final descriptionController = TextEditingController();
-    String selectedCategory = 'General';
-    String selectedPriority = 'medium';
-
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Create Support Ticket',
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 16),
-          const Text(
-            'If you couldn\'t find the answer in our FAQs, please create a support ticket and we\'ll get back to you as soon as possible.',
-            style: TextStyle(color: Colors.grey),
-          ),
-          const SizedBox(height: 24),
-          TextField(
-            controller: subjectController,
-            decoration: const InputDecoration(
-              labelText: 'Subject',
-              border: OutlineInputBorder(),
-              hintText: 'Brief description of your issue',
-            ),
-          ),
-          const SizedBox(height: 16),
-          DropdownButtonFormField<String>(
-            value: selectedCategory,
-            decoration: const InputDecoration(
-              labelText: 'Category',
-              border: OutlineInputBorder(),
-            ),
-            items: const [
-              DropdownMenuItem(value: 'General', child: Text('General')),
-              DropdownMenuItem(
-                value: 'Technical Issue',
-                child: Text('Technical Issue'),
-              ),
-              DropdownMenuItem(
-                value: 'Event Issue',
-                child: Text('Event Issue'),
-              ),
-              DropdownMenuItem(
-                value: 'Forum Issue',
-                child: Text('Forum Issue'),
-              ),
-              DropdownMenuItem(
-                value: 'Account Issue',
-                child: Text('Account Issue'),
-              ),
-            ],
-            onChanged: (value) {
-              selectedCategory = value!;
-            },
-          ),
-          const SizedBox(height: 16),
-          DropdownButtonFormField<String>(
-            value: selectedPriority,
-            decoration: const InputDecoration(
-              labelText: 'Priority',
-              border: OutlineInputBorder(),
-            ),
-            items: const [
-              DropdownMenuItem(value: 'low', child: Text('Low')),
-              DropdownMenuItem(value: 'medium', child: Text('Medium')),
-              DropdownMenuItem(value: 'high', child: Text('High')),
-            ],
-            onChanged: (value) {
-              selectedPriority = value!;
-            },
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: descriptionController,
-            decoration: const InputDecoration(
-              labelText: 'Description',
-              border: OutlineInputBorder(),
-              hintText:
-                  'Please provide detailed information about your issue...',
-            ),
-            maxLines: 5,
-          ),
-          const SizedBox(height: 24),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: () async {
-                if (subjectController.text.isNotEmpty &&
-                    descriptionController.text.isNotEmpty) {
-                  try {
-                    await _db.createSupportTicket(
-                      userId: _auth.currentUser?.uid ?? '',
-                      userEmail: _auth.currentUser?.email ?? '',
-                      subject: subjectController.text,
-                      description: descriptionController.text,
-                      category: selectedCategory,
-                      priority: selectedPriority,
-                    );
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Support ticket created successfully!'),
-                      ),
-                    );
-                    subjectController.clear();
-                    descriptionController.clear();
-                  } catch (e) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Error creating ticket: $e')),
-                    );
-                  }
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Please fill in all fields')),
-                  );
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-              ),
-              child: const Text('Submit Ticket'),
-            ),
-          ),
-          const SizedBox(height: 24),
-          const Text(
-            'My Tickets',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          FutureBuilder<List<Map<String, dynamic>>>(
-            future: _db.getUserTickets(_auth.currentUser?.uid ?? ''),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
-              }
-              final tickets = snapshot.data ?? [];
-
-              if (tickets.isEmpty) {
-                return const Card(
-                  child: Padding(
-                    padding: EdgeInsets.all(16),
-                    child: Text('No tickets found'),
-                  ),
-                );
-              }
-
-              return ListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: tickets.length,
-                itemBuilder: (context, index) {
-                  final ticket = tickets[index];
-                  return Card(
-                    margin: const EdgeInsets.only(bottom: 8),
-                    child: ListTile(
-                      title: Text(ticket['subject'] ?? ''),
-                      subtitle: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Status: ${ticket['status'] ?? ''}'),
-                          Text('Category: ${ticket['category'] ?? ''}'),
-                          Text('Priority: ${ticket['priority'] ?? ''}'),
-                        ],
-                      ),
-                      trailing: _getStatusIcon(ticket['status']),
-                    ),
-                  );
-                },
-              );
-            },
-          ),
-        ],
-      ),
     );
   }
 
@@ -480,19 +297,6 @@ class _SupportScreenState extends State<SupportScreen> {
         ],
       ),
     );
-  }
-
-  Widget _getStatusIcon(String? status) {
-    switch (status) {
-      case 'open':
-        return const Icon(Icons.pending, color: Colors.orange);
-      case 'in_progress':
-        return const Icon(Icons.work, color: Colors.blue);
-      case 'resolved':
-        return const Icon(Icons.check_circle, color: Colors.green);
-      default:
-        return const Icon(Icons.info, color: Colors.grey);
-    }
   }
 
   Future<void> _rateFAQ(String faqId, bool isHelpful) async {

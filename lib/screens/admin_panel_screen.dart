@@ -87,7 +87,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
           ),
           _buildNavTile(
             icon: Icons.support_agent,
-            label: 'Support & Feedback',
+            label: 'FAQs and Feedback',
             index: 7,
           ),
         ],
@@ -136,7 +136,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
       'Onboarding Checklists',
       'Notifications Management',
       'Reports',
-      'Support & Feedback',
+      'FAQs and Feedback',
     ];
 
     return Scaffold(
@@ -340,7 +340,7 @@ class _DashboardScreen extends StatelessWidget {
                     ),
                     _AdminActionCard(
                       icon: Icons.support_agent,
-                      label: 'Support & Feedback',
+                      label: 'FAQs and Feedback',
                       onTap: () => Navigator.of(context).push(
                         MaterialPageRoute(builder: (_) => const SupportFeedbackScreen()),
                       ),

@@ -19,13 +19,13 @@ class _SupportFeedbackScreenState extends State<SupportFeedbackScreen> {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 4,
+      length: 3,
       child: Scaffold(
         backgroundColor: const Color(0xFFF6EEDD),
         appBar: AppBar(
           backgroundColor: const Color(0xFF0A2B6B),
           title: const Text(
-            'Support & Feedback',
+            'FAQs and Feedback',
             style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
           ),
           leading: IconButton(
@@ -41,7 +41,6 @@ class _SupportFeedbackScreenState extends State<SupportFeedbackScreen> {
           bottom: const TabBar(
             tabs: [
               Tab(text: 'FAQs'),
-              Tab(text: 'Support Tickets'),
               Tab(text: 'Feedback'),
               Tab(text: 'Analytics'),
             ],
@@ -57,112 +56,10 @@ class _SupportFeedbackScreenState extends State<SupportFeedbackScreen> {
         body: TabBarView(
           children: [
             _buildFAQsTab(),
-            _buildSupportTicketsTab(),
             _buildFeedbackTab(),
             _buildAnalyticsTab(),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildSupportTicketsTab() {
-    return Expanded(
-      child: FutureBuilder<List<Map<String, dynamic>>>(
-        future: _db.getSupportTickets(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
-          }
-          final tickets = snapshot.data ?? [];
-          if (tickets.isEmpty) {
-            return const Center(child: Text('No support tickets found'));
-          }
-          return ListView.builder(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            itemCount: tickets.length,
-            itemBuilder: (context, index) {
-              final ticket = tickets[index];
-              return Card(
-                margin: const EdgeInsets.only(bottom: 8),
-                child: ExpansionTile(
-                  title: Text(
-                    ticket['subject'] ?? '',
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  subtitle: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('From: ${ticket['userEmail'] ?? ''}'),
-                      Text('Category: ${ticket['category'] ?? ''}'),
-                      Text('Status: ${ticket['status'] ?? ''}'),
-                      Text('Priority: ${ticket['priority'] ?? ''}'),
-                    ],
-                  ),
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Description:',
-                            style: TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(ticket['description'] ?? ''),
-                          const SizedBox(height: 16),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: ElevatedButton(
-                                  onPressed: () => _updateTicketStatus(
-                                    ticket['id'],
-                                    'in_progress',
-                                  ),
-                                  child: const Text('Mark In Progress'),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: ElevatedButton(
-                                  onPressed: () => _updateTicketStatus(
-                                    ticket['id'],
-                                    'resolved',
-                                  ),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.green,
-                                    foregroundColor: Colors.white,
-                                  ),
-                                  child: const Text('Resolve'),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          SizedBox(
-                            width: double.infinity,
-                            child: ElevatedButton(
-                              onPressed: () => _showResponseDialog(ticket),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.blue,
-                                foregroundColor: Colors.white,
-                              ),
-                              child: const Text('Add Response'),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            },
-          );
-        },
       ),
     );
   }
@@ -278,13 +175,6 @@ class _SupportFeedbackScreenState extends State<SupportFeedbackScreen> {
                 icon: const Icon(Icons.add),
                 label: const Text('Add FAQ'),
               ),
-              const SizedBox(width: 8),
-              ElevatedButton.icon(
-                onPressed: _generateDummyFAQs,
-                icon: const Icon(Icons.refresh),
-                label: const Text('Seed Dummy FAQs'),
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.indigo),
-              ),
             ],
           ),
         ),
@@ -298,7 +188,9 @@ class _SupportFeedbackScreenState extends State<SupportFeedbackScreen> {
               if (snapshot.hasError) {
                 return Center(child: Text('Error: ${snapshot.error}'));
               }
-              final faqs = snapshot.data ?? [];
+              final faqs = (snapshot.data ?? [])
+                .where((faq) => !(faq['question']?.toString().toLowerCase().contains('dining hall') ?? false))
+                .toList();
               // Filter by search term
               final filteredFaqs = faqs.where((faq) {
                 final searchTerm = _searchController.text.toLowerCase();
@@ -499,64 +391,6 @@ class _SupportFeedbackScreenState extends State<SupportFeedbackScreen> {
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Future<void> _updateTicketStatus(String ticketId, String status) async {
-    try {
-      await _db.updateTicketStatus(ticketId, status);
-      setState(() {}); // Refresh the UI
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Ticket status updated to $status')),
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error updating ticket status: $e')),
-      );
-    }
-  }
-
-  Future<void> _showResponseDialog(Map<String, dynamic> ticket) async {
-    final responseController = TextEditingController();
-
-    return showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Add Response'),
-        content: TextField(
-          controller: responseController,
-          decoration: const InputDecoration(
-            labelText: 'Response',
-            border: OutlineInputBorder(),
-          ),
-          maxLines: 3,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              if (responseController.text.isNotEmpty) {
-                await _db.addTicketResponse(
-                  ticket['id'],
-                  responderId: _auth.currentUser?.uid ?? '',
-                  responderName: 'Admin',
-                  message: responseController.text,
-                  isAdmin: true,
-                );
-                Navigator.pop(context);
-                setState(() {}); // Refresh the UI
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Response added successfully')),
-                );
-              }
-            },
-            child: const Text('Send'),
-          ),
-        ],
       ),
     );
   }
