@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../widgets/shared_navigation_bar.dart';
 
 class ResourcesScreen extends StatefulWidget {
   const ResourcesScreen({super.key});
@@ -11,6 +12,7 @@ class ResourcesScreen extends StatefulWidget {
 class _ResourcesScreenState extends State<ResourcesScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
+  int _currentIndex = 1;
 
   final List<Map<String, dynamic>> _allResources = [
     // Academic Resources
@@ -278,6 +280,14 @@ class _ResourcesScreenState extends State<ResourcesScreen> {
                   ),
           ),
         ],
+      ),
+      bottomNavigationBar: SharedNavigationBar(
+        currentIndex: _currentIndex,
+        onTap: (index) {
+          setState(() {
+            _currentIndex = index;
+          });
+        },
       ),
     );
   }

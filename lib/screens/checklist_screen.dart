@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:strathapp/services/database_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../widgets/shared_navigation_bar.dart';
 
 class ChecklistScreen extends StatefulWidget {
   const ChecklistScreen({super.key});
@@ -12,6 +13,7 @@ class ChecklistScreen extends StatefulWidget {
 class _ChecklistScreenState extends State<ChecklistScreen> {
   final DatabaseService _db = DatabaseService();
   final user = FirebaseAuth.instance.currentUser;
+  int _currentIndex = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -185,6 +187,14 @@ class _ChecklistScreenState extends State<ChecklistScreen> {
                     ],
                   ],
                 ),
+              ),
+              bottomNavigationBar: SharedNavigationBar(
+                currentIndex: _currentIndex,
+                onTap: (index) {
+                  setState(() {
+                    _currentIndex = index;
+                  });
+                },
               ),
             );
           },

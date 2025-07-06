@@ -768,35 +768,68 @@ class DatabaseService {
     final batch = _firestore.batch();
     final faqs = [
       {
-        'question': 'How do I reset my password?',
+        'question': 'How do I access the student portal?',
         'answer':
-            'Go to the login screen and click on "Forgot Password". Enter your email address and follow the instructions sent to your email.',
-        'category': 'Account',
+            'Visit student.strathmore.edu and log in with your student ID and password. The portal provides access to your academic records, course registration, fee statements, and other student services.',
+        'category': 'General',
         'isActive': true,
-        'helpfulCount': 15,
-        'notHelpfulCount': 2,
+        'helpfulCount': 234,
+        'notHelpfulCount': 12,
         'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
       },
       {
-        'question': 'How do I register for campus events?',
+        'question': 'What are the library opening hours?',
         'answer':
-            'Navigate to the Events section, find the event you want to attend, and click the "Register" button. You\'ll receive a confirmation email.',
-        'category': 'Events',
+            'The main library is open Monday to Friday from 7:30 AM to 10:00 PM, Saturday from 8:00 AM to 6:00 PM, and Sunday from 2:00 PM to 8:00 PM. During exam periods, hours are extended until 11:00 PM.',
+        'category': 'General',
         'isActive': true,
-        'helpfulCount': 23,
-        'notHelpfulCount': 1,
-        'createdAt': FieldValue.serverTimestamp(),
-        'updatedAt': FieldValue.serverTimestamp(),
-      },
-      {
-        'question': 'How do I post in the forum?',
-        'answer':
-            'Go to the Forum section, click "Ask Question" or "New Post", fill in the title and content, select a category, and submit your post.',
-        'category': 'Forum',
-        'isActive': true,
-        'helpfulCount': 8,
+        'helpfulCount': 89,
         'notHelpfulCount': 3,
+        'createdAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      },
+      {
+        'question': 'How do I connect to campus WiFi?',
+        'answer':
+            'Connect to "Strathmore-Student" network. Use your student ID as username and your student portal password. For technical support, visit the IT helpdesk in the main building or email helpdesk@strathmore.edu.',
+        'category': 'Technical',
+        'isActive': true,
+        'helpfulCount': 198,
+        'notHelpfulCount': 15,
+        'createdAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      },
+      {
+        'question': 'How do I register for courses?',
+        'answer':
+            'Course registration is done online through the student portal during designated periods. You must meet with your academic advisor first for course approval. Registration periods are announced via email and notice boards.',
+        'category': 'General',
+        'isActive': true,
+        'helpfulCount': 167,
+        'notHelpfulCount': 9,
+        'createdAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      },
+      {
+        'question': 'How do I request an academic transcript?',
+        'answer':
+            'Submit a transcript request through the student portal under "Academic Records" or visit the registrar\'s office. There is a processing fee of KES 1,000. Transcripts are ready within 3-5 business days.',
+        'category': 'General',
+        'isActive': true,
+        'helpfulCount': 78,
+        'notHelpfulCount': 4,
+        'createdAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      },
+      {
+        'question': 'How do I access financial aid and scholarship information?',
+        'answer':
+            'Visit the financial aid office or check the student portal under "Financial Aid". Information about scholarships, bursaries, and payment plans is available. Contact financialaid@strathmore.edu for inquiries.',
+        'category': 'General',
+        'isActive': true,
+        'helpfulCount': 112,
+        'notHelpfulCount': 5,
         'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
       },

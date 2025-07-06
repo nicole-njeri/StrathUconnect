@@ -3,7 +3,6 @@ import 'package:strathapp/screens/admin/user_management_screen.dart';
 import 'package:strathapp/screens/admin/create_event_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:strathapp/services/auth_service.dart';
-import 'package:strathapp/screens/admin/manage_locations_screen.dart';
 import 'package:strathapp/screens/admin/forum_moderation_screen.dart';
 import 'package:strathapp/screens/admin/checklist_management_screen.dart';
 import 'package:strathapp/screens/admin/notification_management_screen.dart';
@@ -51,71 +50,76 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
               style: TextStyle(color: Colors.white, fontSize: 24),
             ),
           ),
-          ListTile(
-            leading: const Icon(Icons.dashboard),
-            title: const Text('Dashboard'),
-            onTap: () => _selectPage(0),
-            selected: _selectedPageIndex == 0,
+          _buildNavTile(
+            icon: Icons.dashboard,
+            label: 'Dashboard',
+            index: 0,
           ),
-          ListTile(
-            leading: const Icon(Icons.people),
-            title: const Text('User Management'),
-            onTap: () => _selectPage(1),
-            selected: _selectedPageIndex == 1,
+          _buildNavTile(
+            icon: Icons.people,
+            label: 'User Management',
+            index: 1,
           ),
-          ListTile(
-            leading: const Icon(Icons.location_on),
-            title: const Text('Manage Locations'),
-            onTap: () => _selectPage(2),
-            selected: _selectedPageIndex == 2,
+          _buildNavTile(
+            icon: Icons.event,
+            label: 'Events Management',
+            index: 2,
           ),
-          ListTile(
-            leading: const Icon(Icons.event),
-            title: const Text('Manage Events'),
-            onTap: () => _selectPage(3),
-            selected: _selectedPageIndex == 3,
+          _buildNavTile(
+            icon: Icons.forum,
+            label: 'Forum Management',
+            index: 3,
           ),
-          ListTile(
-            leading: const Icon(Icons.forum),
-            title: const Text('Manage Forum'),
-            onTap: () => _selectPage(4),
-            selected: _selectedPageIndex == 4,
+          _buildNavTile(
+            icon: Icons.checklist,
+            label: 'Onboarding Checklists',
+            index: 4,
           ),
-          ListTile(
-            leading: const Icon(Icons.checklist),
-            title: const Text('Onboarding Checklists'),
-            onTap: () => _selectPage(5),
-            selected: _selectedPageIndex == 5,
+          _buildNavTile(
+            icon: Icons.notifications,
+            label: 'Notifications Management',
+            index: 5,
           ),
-          ListTile(
-            leading: const Icon(Icons.notifications),
-            title: const Text('Manage Notifications'),
-            onTap: () => _selectPage(6),
-            selected: _selectedPageIndex == 6,
+          _buildNavTile(
+            icon: Icons.bar_chart,
+            label: 'Reports',
+            index: 6,
           ),
-          ListTile(
-            leading: const Icon(Icons.bar_chart),
-            title: const Text('Reports'),
-            onTap: () => _selectPage(7),
-            selected: _selectedPageIndex == 7,
-          ),
-          ListTile(
-            leading: const Icon(Icons.support_agent),
-            title: const Text('Support & Feedback'),
-            onTap: () => _selectPage(8),
-            selected: _selectedPageIndex == 8,
+          _buildNavTile(
+            icon: Icons.support_agent,
+            label: 'Support & Feedback',
+            index: 7,
           ),
         ],
       ),
     );
   }
 
+  Widget _buildNavTile({required IconData icon, required String label, required int index}) {
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hoveredIndex = index),
+      onExit: (_) => setState(() => _hoveredIndex = null),
+      child: Container(
+        color: _hoveredIndex == index
+            ? Colors.blue.withOpacity(0.08)
+            : (_selectedPageIndex == index ? Colors.blue.withOpacity(0.12) : null),
+        child: ListTile(
+          leading: Icon(icon, color: primaryBlue),
+          title: Text(label, style: TextStyle(color: primaryBlue)),
+          onTap: () => _selectPage(index),
+          selected: _selectedPageIndex == index,
+        ),
+      ),
+    );
+  }
+
+  int? _hoveredIndex;
+
   @override
   Widget build(BuildContext context) {
     final List<Widget> pages = [
       _DashboardScreen(adminNameFuture: _authService.getUserFullName()),
       const UserManagementScreen(),
-      const ManageLocationsScreen(),
       const ManageEventsScreen(),
       const ForumModerationScreen(),
       const ChecklistManagementScreen(),
@@ -127,11 +131,10 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
     final List<String> titles = [
       'Admin Dashboard',
       'User Management',
-      'Manage Locations',
-      'Manage Events',
-      'Manage Forum',
+      'Events Management',
+      'Forum Management',
       'Onboarding Checklists',
-      'Manage Notifications',
+      'Notifications Management',
       'Reports',
       'Support & Feedback',
     ];
@@ -139,32 +142,36 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF6EEDD),
       appBar: AppBar(
+        backgroundColor: primaryBlue,
+        iconTheme: const IconThemeData(color: Colors.white),
         title: Row(
           mainAxisAlignment: MainAxisAlignment.start,
           children: [
-            // Strathmore Logo between nav icon and title
-            const SizedBox(
-              height: 36,
-              child: Padding(
-                padding: EdgeInsets.only(right: 12),
+            const Padding(
+              padding: EdgeInsets.only(right: 12),
+              child: SizedBox(
+                height: 32,
+                width: 32,
                 child: StrathmoreLogo(size: 32),
               ),
             ),
-            Text(
-              titles[_selectedPageIndex],
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 20,
+            Expanded(
+              child: Text(
+                titles[_selectedPageIndex],
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 20,
+                ),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
               ),
             ),
           ],
         ),
-        backgroundColor: primaryBlue,
-        iconTheme: const IconThemeData(color: Colors.white),
         actions: [
           IconButton(
-            icon: const Icon(Icons.account_circle, color: Colors.white),
+            icon: const Icon(Icons.person_outline, color: Colors.white),
             tooltip: 'Profile',
             onPressed: () async {
               final user = await FirebaseFirestore.instance
@@ -250,7 +257,9 @@ class _DashboardScreen extends StatelessWidget {
           future: _db.getRecentActivity(limit: 6),
           builder: (context, activitySnapshot) {
             final stats = statsSnapshot.data ?? {};
-            final recentActivities = activitySnapshot.data ?? [];
+            final recentActivities = (activitySnapshot.data ?? [])
+                .where((activity) => activity['type'] != 'forum_post')
+                .toList();
             return LayoutBuilder(
               builder: (context, constraints) {
                 return SingleChildScrollView(
@@ -266,14 +275,7 @@ class _DashboardScreen extends StatelessWidget {
                           horizontal: 24,
                         ),
                         decoration: const BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              _AdminPanelScreenState.primaryBlue,
-                              Color(0xFF3A4B6A),
-                            ],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
+                          color: Color(0xFFF6EEDD),
                           borderRadius: BorderRadius.only(
                             bottomLeft: Radius.circular(32),
                             bottomRight: Radius.circular(32),
@@ -292,7 +294,7 @@ class _DashboardScreen extends StatelessWidget {
                                 Text(
                                   'Hello, $adminName!',
                                   style: const TextStyle(
-                                    color: Colors.white,
+                                    color: Colors.black,
                                     fontSize: 24,
                                     fontWeight: FontWeight.bold,
                                   ),
@@ -300,7 +302,7 @@ class _DashboardScreen extends StatelessWidget {
                                 const SizedBox(height: 6),
                                 const Text(
                                   'Here is your dashboard overview.',
-                                  style: TextStyle(color: Colors.white70, fontSize: 16),
+                                  style: TextStyle(color: Colors.black87, fontSize: 16),
                                 ),
                               ],
                             );
@@ -748,15 +750,9 @@ class ManageEventsScreen extends StatelessWidget {
                               Text(
                                 'Date: ${eventDate != null ? eventDate.toLocal().toString().split(' ')[0] : 'N/A'}',
                               ),
-<<<<<<< HEAD
-                              Text('Time: \\$eventTime'),
-                              Text('Location: \\$locationID'),
-                              Text('Organizer: \\$organizer'),
-=======
                               Text('Time: $eventTime'),
                               Text('Location: $locationID'),
                               Text('Organizer: $organizer'),
->>>>>>> 86095da677b4e48de804bf681101232241e52be7
                             ],
                           ),
                         ),

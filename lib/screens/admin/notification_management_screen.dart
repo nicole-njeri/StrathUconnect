@@ -56,6 +56,7 @@ class _NotificationManagementScreenState
     return DefaultTabController(
       length: 3,
       child: Scaffold(
+        backgroundColor: const Color(0xFFF6EEDD),
         appBar: AppBar(
           title: const Text('Send Notifications'),
           bottom: const TabBar(

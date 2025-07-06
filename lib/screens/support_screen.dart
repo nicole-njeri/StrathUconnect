@@ -12,7 +12,6 @@ class SupportScreen extends StatefulWidget {
 class _SupportScreenState extends State<SupportScreen> {
   final DatabaseService _db = DatabaseService();
   final AuthService _auth = AuthService();
-  String _selectedCategory = 'all';
   final TextEditingController _searchController = TextEditingController();
 
   @override
@@ -20,6 +19,7 @@ class _SupportScreenState extends State<SupportScreen> {
     return DefaultTabController(
       length: 3,
       child: Scaffold(
+        backgroundColor: const Color(0xFFF6EEDD),
         appBar: AppBar(
           title: const Text(
             'Support & Help',
@@ -49,62 +49,21 @@ class _SupportScreenState extends State<SupportScreen> {
       children: [
         Padding(
           padding: const EdgeInsets.all(16),
-          child: Column(
-            children: [
-              TextField(
-                controller: _searchController,
-                decoration: const InputDecoration(
-                  labelText: 'Search FAQs',
-                  prefixIcon: Icon(Icons.search),
-                  border: OutlineInputBorder(),
-                ),
-                onChanged: (value) {
-                  setState(() {}); // Trigger rebuild for search
-                },
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  const Text('Category: '),
-                  const SizedBox(width: 8),
-                  DropdownButton<String>(
-                    value: _selectedCategory,
-                    items: const [
-                      DropdownMenuItem(
-                        value: 'all',
-                        child: Text('All Categories'),
-                      ),
-                      DropdownMenuItem(
-                        value: 'General',
-                        child: Text('General'),
-                      ),
-                      DropdownMenuItem(
-                        value: 'Account',
-                        child: Text('Account'),
-                      ),
-                      DropdownMenuItem(value: 'Events', child: Text('Events')),
-                      DropdownMenuItem(value: 'Forum', child: Text('Forum')),
-                      DropdownMenuItem(
-                        value: 'Technical',
-                        child: Text('Technical'),
-                      ),
-                    ],
-                    onChanged: (value) {
-                      setState(() {
-                        _selectedCategory = value!;
-                      });
-                    },
-                  ),
-                ],
-              ),
-            ],
+          child: TextField(
+            controller: _searchController,
+            decoration: const InputDecoration(
+              labelText: 'Search FAQs',
+              prefixIcon: Icon(Icons.search),
+              border: OutlineInputBorder(),
+            ),
+            onChanged: (value) {
+              setState(() {}); // Trigger rebuild for search
+            },
           ),
         ),
         Expanded(
           child: FutureBuilder<List<Map<String, dynamic>>>(
-            future: _db.getFAQs(
-              category: _selectedCategory == 'all' ? null : _selectedCategory,
-            ),
+            future: _db.getFAQs(),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return const Center(child: CircularProgressIndicator());
@@ -129,7 +88,7 @@ class _SupportScreenState extends State<SupportScreen> {
 
               return ListView.builder(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
-                itemCount: filteredFaqs.length,
+                itemCount: filteredFaqs.length > 6 ? 6 : filteredFaqs.length,
                 itemBuilder: (context, index) {
                   final faq = filteredFaqs[index];
                   return Card(
@@ -139,7 +98,6 @@ class _SupportScreenState extends State<SupportScreen> {
                         faq['question'] ?? '',
                         style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
-                      subtitle: Text('Category: ${faq['category'] ?? ''}'),
                       children: [
                         Padding(
                           padding: const EdgeInsets.all(16),

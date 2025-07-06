@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../services/auth_service.dart';
 import 'question_detail_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../widgets/shared_navigation_bar.dart';
 
 class AskQuestionScreen extends StatefulWidget {
   const AskQuestionScreen({super.key});
@@ -16,6 +17,7 @@ class _AskQuestionScreenState extends State<AskQuestionScreen> {
   final _questionController = TextEditingController();
   final AuthService _authService = AuthService();
   bool _isSubmitting = false;
+  int _currentIndex = 0;
 
   Future<void> _submitQuestion() async {
     if (!_formKey.currentState!.validate()) return;
@@ -313,6 +315,14 @@ class _AskQuestionScreenState extends State<AskQuestionScreen> {
             ),
           ],
         ),
+      ),
+      bottomNavigationBar: SharedNavigationBar(
+        currentIndex: _currentIndex,
+        onTap: (index) {
+          setState(() {
+            _currentIndex = index;
+          });
+        },
       ),
     );
   }

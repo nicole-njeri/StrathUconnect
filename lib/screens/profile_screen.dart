@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
+import '../widgets/shared_navigation_bar.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -18,6 +19,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   );
   bool _isEditing = false;
   File? _profileImage;
+  int _currentIndex = 3;
 
   Future<void> _pickImage() async {
     final picker = ImagePicker();
@@ -58,7 +60,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
                 child: Column(
                   children: [
-<<<<<<< HEAD
                     GestureDetector(
                       onTap: _pickImage,
                       child: CircleAvatar(
@@ -75,12 +76,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               )
                             : null,
                       ),
-=======
-                    const CircleAvatar(
-                      radius: 36,
-                      backgroundColor: Color(0xFF0A2B6B),
-                      child: Icon(Icons.person, color: Colors.white, size: 40),
->>>>>>> 86095da677b4e48de804bf681101232241e52be7
                     ),
                     const SizedBox(height: 24),
                     TextField(
@@ -172,6 +167,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ],
         ),
+      ),
+      bottomNavigationBar: SharedNavigationBar(
+        currentIndex: _currentIndex,
+        onTap: (index) {
+          setState(() {
+            _currentIndex = index;
+          });
+        },
       ),
     );
   }
