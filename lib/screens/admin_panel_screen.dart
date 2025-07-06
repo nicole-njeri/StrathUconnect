@@ -253,258 +253,162 @@ class _DashboardScreen extends StatelessWidget {
     return FutureBuilder<Map<String, dynamic>>(
       future: _db.getAdminDashboardStats(),
       builder: (context, statsSnapshot) {
-        return FutureBuilder<List<Map<String, dynamic>>>(
-          future: _db.getRecentActivity(limit: 6),
-          builder: (context, activitySnapshot) {
-            final stats = statsSnapshot.data ?? {};
-            final recentActivities = (activitySnapshot.data ?? [])
-                .where((activity) => activity['type'] != 'forum_post')
-                .toList();
-            return LayoutBuilder(
-              builder: (context, constraints) {
-                return SingleChildScrollView(
-                  padding: const EdgeInsets.all(0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Header with gradient background (no logo, no welcome message)
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(
-                          vertical: 32,
-                          horizontal: 24,
-                        ),
-                        decoration: const BoxDecoration(
-                          color: Color(0xFFF6EEDD),
-                          borderRadius: BorderRadius.only(
-                            bottomLeft: Radius.circular(32),
-                            bottomRight: Radius.circular(32),
-                          ),
-                        ),
-                        child: FutureBuilder<String?>(
-                          future: adminNameFuture,
-                          builder: (context, snapshot) {
-                            if (snapshot.connectionState == ConnectionState.waiting) {
-                              return const SizedBox(height: 32);
-                            }
-                            final adminName = snapshot.data ?? 'Admin';
-                            return Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Hello, $adminName!',
-                                  style: const TextStyle(
-                                    color: Colors.black,
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                const SizedBox(height: 6),
-                                const Text(
-                                  'Here is your dashboard overview.',
-                                  style: TextStyle(color: Colors.black87, fontSize: 16),
-                                ),
-                              ],
-                            );
-                          },
-                        ),
+        final stats = statsSnapshot.data ?? {};
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Summary Cards Row
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 32, 16, 8),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _SummaryCard(
+                        icon: Icons.people,
+                        label: 'Total Users',
+                        value: stats['totalStudents']?.toString() ?? '[X]',
+                        color: Color(0xFFEAF3FF),
+                        iconColor: Color(0xFF0A2B6B),
                       ),
-                      const SizedBox(height: 24),
-                      // Summary Cards
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: SummaryCard(
-                                title: 'Total Students',
-                                value: stats['totalStudents']?.toString() ?? '-',
-                                icon: Icons.people_outline,
-                                color: _AdminPanelScreenState.primaryBlue,
-                                iconColor: Colors.white,
-                                textColor: Colors.white,
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: SummaryCard(
-                                title: 'Active Events',
-                                value: stats['activeEvents']?.toString() ?? '-',
-                                icon: Icons.event_available,
-                                color: _AdminPanelScreenState.primaryRed,
-                                iconColor: Colors.white,
-                                textColor: Colors.white,
-                              ),
-                            ),
-                          ],
-                        ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: _SummaryCard(
+                        icon: Icons.forum,
+                        label: 'Active Forum Posts',
+                        value: stats['activeForumPosts']?.toString() ?? '[Y]',
+                        color: Color(0xFFEAF3FF),
+                        iconColor: Color(0xFF0A2B6B),
                       ),
-                      const SizedBox(height: 32),
-                      // Quick Actions
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Text(
-                          'Quick Actions',
-                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            color: _AdminPanelScreenState.primaryBlue,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+                    ),
+                  ],
+                ),
+              ),
+              // Grid of Action Cards
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: GridView.count(
+                  crossAxisCount: 2,
+                  shrinkWrap: true,
+                  physics: NeverScrollableScrollPhysics(),
+                  mainAxisSpacing: 16,
+                  crossAxisSpacing: 16,
+                  children: [
+                    _AdminActionCard(
+                      icon: Icons.people,
+                      label: 'User Management',
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const UserManagementScreen()),
                       ),
-                      const SizedBox(height: 12),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: ElevatedButton.icon(
-                                onPressed: () {
-                                  Navigator.of(context).push(
-                                    MaterialPageRoute(
-                                      builder: (_) => const CreateEventScreen(),
-                                    ),
-                                  );
-                                },
-                                icon: const Icon(Icons.add, color: Colors.white),
-                                label: const Text('Create Event'),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: _AdminPanelScreenState.primaryRed,
-                                  foregroundColor: Colors.white,
-                                  padding: const EdgeInsets.symmetric(vertical: 16),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: ElevatedButton.icon(
-                                onPressed: () {},
-                                icon: const Icon(
-                                  Icons.announcement,
-                                  color: _AdminPanelScreenState.primaryBlue,
-                                ),
-                                label: const Text('Announcement'),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.white,
-                                  foregroundColor: _AdminPanelScreenState.primaryBlue,
-                                  side: const BorderSide(
-                                    color: _AdminPanelScreenState.primaryBlue,
-                                    width: 2,
-                                  ),
-                                  padding: const EdgeInsets.symmetric(vertical: 16),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
+                    ),
+                    _AdminActionCard(
+                      icon: Icons.event,
+                      label: 'Events Management',
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const ManageEventsScreen()),
                       ),
-                      const SizedBox(height: 32),
-                      // Recent Activity
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Text(
-                          'Recent Activity',
-                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            color: _AdminPanelScreenState.primaryBlue,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+                    ),
+                    _AdminActionCard(
+                      icon: Icons.forum,
+                      label: 'Forum Management',
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const ForumModerationScreen()),
                       ),
-                      const SizedBox(height: 12),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Card(
-                          elevation: 2,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: ListView.separated(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            padding: const EdgeInsets.all(16),
-                            itemCount: recentActivities.length,
-                            separatorBuilder: (context, i) => const Divider(),
-                            itemBuilder: (context, index) {
-                              final activity = recentActivities[index];
-                              return Row(
-                                children: [
-                                  CircleAvatar(
-                                    backgroundColor: _AdminPanelScreenState.primaryBlue.withOpacity(0.1),
-                                    child: Icon(
-                                      activity['type'] == 'forum_post'
-                                          ? Icons.forum
-                                          : activity['type'] == 'event'
-                                              ? Icons.event
-                                              : Icons.notifications,
-                                      color: _AdminPanelScreenState.primaryBlue,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 16),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          activity['title'] ?? '',
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
-                                        if (activity['description'] != null && activity['description'].toString().isNotEmpty)
-                                          Text(
-                                            activity['description'],
-                                            style: const TextStyle(
-                                              color: Colors.grey,
-                                              fontSize: 12,
-                                            ),
-                                          ),
-                                        if (activity['userEmail'] != null)
-                                          Text(
-                                            'By: ${activity['userEmail']}',
-                                            style: const TextStyle(
-                                              color: Colors.grey,
-                                              fontSize: 12,
-                                            ),
-                                          ),
-                                        if (activity['organizer'] != null)
-                                          Text(
-                                            'Organizer: ${activity['organizer']}',
-                                            style: const TextStyle(
-                                              color: Colors.grey,
-                                              fontSize: 12,
-                                            ),
-                                          ),
-                                        if (activity['priority'] != null)
-                                          Text(
-                                            'Priority: ${activity['priority']}',
-                                            style: const TextStyle(
-                                              color: Colors.grey,
-                                              fontSize: 12,
-                                            ),
-                                          ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              );
-                            },
-                          ),
-                        ),
+                    ),
+                    _AdminActionCard(
+                      icon: Icons.checklist,
+                      label: 'Onboarding Checklists',
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const ChecklistManagementScreen()),
                       ),
-                      const SizedBox(height: 32),
-                    ],
-                  ),
-                );
-              },
-            );
-          },
+                    ),
+                    _AdminActionCard(
+                      icon: Icons.notifications,
+                      label: 'Notifications Management',
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const NotificationManagementScreen()),
+                      ),
+                    ),
+                    _AdminActionCard(
+                      icon: Icons.bar_chart,
+                      label: 'Reports',
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const ReportsScreen()),
+                      ),
+                    ),
+                    _AdminActionCard(
+                      icon: Icons.support_agent,
+                      label: 'Support & Feedback',
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const SupportFeedbackScreen()),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         );
       },
+    );
+  }
+}
+
+class _SummaryCard extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+  final Color color;
+  final Color iconColor;
+  const _SummaryCard({required this.icon, required this.label, required this.value, required this.color, required this.iconColor});
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      color: color,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 32, color: iconColor),
+            const SizedBox(height: 8),
+            Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 4),
+            Text(value, style: const TextStyle(fontSize: 18)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AdminActionCard extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  const _AdminActionCard({required this.icon, required this.label, required this.onTap});
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      color: Color(0xFFEAF3FF),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: onTap,
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 40, color: Color(0xFF0A2B6B)),
+              const SizedBox(height: 12),
+              Text(label, textAlign: TextAlign.center, style: const TextStyle(fontWeight: FontWeight.w600)),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
@@ -592,6 +496,23 @@ class ManageEventsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF6EEDD),
+      appBar: AppBar(
+        backgroundColor: _AdminPanelScreenState.primaryBlue,
+        iconTheme: const IconThemeData(color: Colors.white),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        title: const Text(
+          'Manage Events',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        elevation: 0,
+      ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
           Navigator.of(
@@ -606,25 +527,6 @@ class ManageEventsScreen extends StatelessWidget {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
-            decoration: const BoxDecoration(
-              color: _AdminPanelScreenState.primaryBlue,
-              borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(32),
-                bottomRight: Radius.circular(32),
-              ),
-            ),
-            child: const Text(
-              'Manage Events',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
           const SizedBox(height: 24),
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
@@ -637,7 +539,7 @@ class ManageEventsScreen extends StatelessWidget {
                   return const Center(child: CircularProgressIndicator());
                 }
                 if (snapshot.hasError) {
-                  return Center(child: Text('Error: ${snapshot.error}'));
+                  return Center(child: Text('Error: \\${snapshot.error}'));
                 }
                 if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
                   return const Center(child: Text('No events found.'));
@@ -663,7 +565,7 @@ class ManageEventsScreen extends StatelessWidget {
                     return Material(
                       elevation: 4,
                       borderRadius: BorderRadius.circular(20),
-                      color: Colors.white.withOpacity(0.95),
+                      color: Colors.white,
                       child: InkWell(
                         borderRadius: BorderRadius.circular(20),
                         onTap: () {},
@@ -748,11 +650,11 @@ class ManageEventsScreen extends StatelessWidget {
                               Text(description),
                               const SizedBox(height: 8),
                               Text(
-                                'Date: ${eventDate != null ? eventDate.toLocal().toString().split(' ')[0] : 'N/A'}',
+                                'Date: \\${eventDate != null ? eventDate.toLocal().toString().split(' ')[0] : 'N/A'}',
                               ),
-                              Text('Time: $eventTime'),
-                              Text('Location: $locationID'),
-                              Text('Organizer: $organizer'),
+                              Text('Time: \\${eventTime}'),
+                              Text('Location: \\${locationID}'),
+                              Text('Organizer: \\${organizer}'),
                             ],
                           ),
                         ),

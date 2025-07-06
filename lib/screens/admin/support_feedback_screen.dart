@@ -24,9 +24,9 @@ class _SupportFeedbackScreenState extends State<SupportFeedbackScreen> {
           title: const Text('Support & Feedback'),
           bottom: const TabBar(
             tabs: [
+              Tab(text: 'FAQs'),
               Tab(text: 'Support Tickets'),
               Tab(text: 'Feedback'),
-              Tab(text: 'FAQs'),
               Tab(text: 'Analytics'),
             ],
           ),
@@ -40,9 +40,9 @@ class _SupportFeedbackScreenState extends State<SupportFeedbackScreen> {
         ),
         body: TabBarView(
           children: [
+            _buildFAQsTab(),
             _buildSupportTicketsTab(),
             _buildFeedbackTab(),
-            _buildFAQsTab(),
             _buildAnalyticsTab(),
           ],
         ),
@@ -51,267 +51,212 @@ class _SupportFeedbackScreenState extends State<SupportFeedbackScreen> {
   }
 
   Widget _buildSupportTicketsTab() {
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              const Text('Filter by Status: '),
-              const SizedBox(width: 8),
-              DropdownButton<String>(
-                value: _selectedTicketStatus,
-                items: const [
-                  DropdownMenuItem(value: 'all', child: Text('All')),
-                  DropdownMenuItem(value: 'open', child: Text('Open')),
-                  DropdownMenuItem(
-                    value: 'in_progress',
-                    child: Text('In Progress'),
+    return Expanded(
+      child: FutureBuilder<List<Map<String, dynamic>>>(
+        future: _db.getSupportTickets(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (snapshot.hasError) {
+            return Center(child: Text('Error: ${snapshot.error}'));
+          }
+          final tickets = snapshot.data ?? [];
+          if (tickets.isEmpty) {
+            return const Center(child: Text('No support tickets found'));
+          }
+          return ListView.builder(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            itemCount: tickets.length,
+            itemBuilder: (context, index) {
+              final ticket = tickets[index];
+              return Card(
+                margin: const EdgeInsets.only(bottom: 8),
+                child: ExpansionTile(
+                  title: Text(
+                    ticket['subject'] ?? '',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
-                  DropdownMenuItem(value: 'resolved', child: Text('Resolved')),
-                ],
-                onChanged: (value) {
-                  setState(() {
-                    _selectedTicketStatus = value!;
-                  });
-                },
-              ),
-            ],
-          ),
-        ),
-        Expanded(
-          child: FutureBuilder<List<Map<String, dynamic>>>(
-            future: _db.getSupportTickets(
-              status: _selectedTicketStatus == 'all'
-                  ? null
-                  : _selectedTicketStatus,
-            ),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
-              }
-              if (snapshot.hasError) {
-                return Center(child: Text('Error: ${snapshot.error}'));
-              }
-              final tickets = snapshot.data ?? [];
-
-              if (tickets.isEmpty) {
-                return const Center(child: Text('No support tickets found'));
-              }
-
-              return ListView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                itemCount: tickets.length,
-                itemBuilder: (context, index) {
-                  final ticket = tickets[index];
-                  return Card(
-                    margin: const EdgeInsets.only(bottom: 8),
-                    child: ExpansionTile(
-                      title: Text(
-                        ticket['subject'] ?? '',
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      subtitle: Column(
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('From: ${ticket['userEmail'] ?? ''}'),
+                      Text('Category: ${ticket['category'] ?? ''}'),
+                      Text('Status: ${ticket['status'] ?? ''}'),
+                      Text('Priority: ${ticket['priority'] ?? ''}'),
+                    ],
+                  ),
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('From: ${ticket['userEmail'] ?? ''}'),
-                          Text('Category: ${ticket['category'] ?? ''}'),
-                          Text('Status: ${ticket['status'] ?? ''}'),
-                          Text('Priority: ${ticket['priority'] ?? ''}'),
-                        ],
-                      ),
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                          const Text(
+                            'Description:',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(ticket['description'] ?? ''),
+                          const SizedBox(height: 16),
+                          Row(
                             children: [
-                              const Text(
-                                'Description:',
-                                style: TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(ticket['description'] ?? ''),
-                              const SizedBox(height: 16),
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: ElevatedButton(
-                                      onPressed: () => _updateTicketStatus(
-                                        ticket['id'],
-                                        'in_progress',
-                                      ),
-                                      child: const Text('Mark In Progress'),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: ElevatedButton(
-                                      onPressed: () => _updateTicketStatus(
-                                        ticket['id'],
-                                        'resolved',
-                                      ),
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: Colors.green,
-                                        foregroundColor: Colors.white,
-                                      ),
-                                      child: const Text('Resolve'),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 8),
-                              SizedBox(
-                                width: double.infinity,
+                              Expanded(
                                 child: ElevatedButton(
-                                  onPressed: () => _showResponseDialog(ticket),
+                                  onPressed: () => _updateTicketStatus(
+                                    ticket['id'],
+                                    'in_progress',
+                                  ),
+                                  child: const Text('Mark In Progress'),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: ElevatedButton(
+                                  onPressed: () => _updateTicketStatus(
+                                    ticket['id'],
+                                    'resolved',
+                                  ),
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.blue,
+                                    backgroundColor: Colors.green,
                                     foregroundColor: Colors.white,
                                   ),
-                                  child: const Text('Add Response'),
+                                  child: const Text('Resolve'),
                                 ),
                               ),
                             ],
                           ),
-                        ),
-                      ],
+                          const SizedBox(height: 8),
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton(
+                              onPressed: () => _showResponseDialog(ticket),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.blue,
+                                foregroundColor: Colors.white,
+                              ),
+                              child: const Text('Add Response'),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  );
-                },
+                  ],
+                ),
               );
             },
-          ),
-        ),
-      ],
+          );
+        },
+      ),
     );
   }
 
   Widget _buildFeedbackTab() {
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              const Text('Filter by Status: '),
-              const SizedBox(width: 8),
-              DropdownButton<String>(
-                value: _selectedFeedbackStatus,
-                items: const [
-                  DropdownMenuItem(value: 'all', child: Text('All')),
-                  DropdownMenuItem(value: 'pending', child: Text('Pending')),
-                  DropdownMenuItem(value: 'reviewed', child: Text('Reviewed')),
-                ],
-                onChanged: (value) {
-                  setState(() {
-                    _selectedFeedbackStatus = value!;
-                  });
-                },
-              ),
-            ],
-          ),
-        ),
-        Expanded(
-          child: FutureBuilder<List<Map<String, dynamic>>>(
-            future: _db.getFeedback(
-              status: _selectedFeedbackStatus == 'all'
-                  ? null
-                  : _selectedFeedbackStatus,
-            ),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
-              }
-              if (snapshot.hasError) {
-                return Center(child: Text('Error: ${snapshot.error}'));
-              }
-              final feedback = snapshot.data ?? [];
-
-              if (feedback.isEmpty) {
-                return const Center(child: Text('No feedback found'));
-              }
-
-              return ListView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                itemCount: feedback.length,
-                itemBuilder: (context, index) {
-                  final item = feedback[index];
-                  return Card(
-                    margin: const EdgeInsets.only(bottom: 8),
-                    child: ExpansionTile(
-                      title: Text(
-                        '${item['feedbackType'] ?? ''} - ${item['category'] ?? ''}',
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      subtitle: Column(
+    return Expanded(
+      child: FutureBuilder<List<Map<String, dynamic>>>(
+        future: _db.getFeedback(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (snapshot.hasError) {
+            return Center(child: Text('Error: ${snapshot.error}'));
+          }
+          final feedback = snapshot.data ?? [];
+          if (feedback.isEmpty) {
+            return const Center(child: Text('No feedback found'));
+          }
+          return ListView.builder(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            itemCount: feedback.length,
+            itemBuilder: (context, index) {
+              final item = feedback[index];
+              return Card(
+                margin: const EdgeInsets.only(bottom: 8),
+                child: ExpansionTile(
+                  title: Text(
+                    '${item['feedbackType'] ?? ''} - ${item['category'] ?? ''}',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('From: ${item['userEmail'] ?? ''}'),
+                      Text('Status: ${item['status'] ?? ''}'),
+                      if (item['rating'] != null)
+                        Text('Rating: ${item['rating']}/5'),
+                    ],
+                  ),
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('From: ${item['userEmail'] ?? ''}'),
-                          Text('Status: ${item['status'] ?? ''}'),
-                          if (item['rating'] != null)
-                            Text('Rating: ${item['rating']}/5'),
+                          const Text(
+                            'Message:',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(item['message'] ?? ''),
+                          if (item['adminResponse'] != null) ...[
+                            const SizedBox(height: 16),
+                            const Text(
+                              'Admin Response:',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(item['adminResponse']),
+                          ],
+                          const SizedBox(height: 16),
+                          if (item['status'] == 'pending')
+                            SizedBox(
+                              width: double.infinity,
+                              child: ElevatedButton(
+                                onPressed: () =>
+                                    _showFeedbackResponseDialog(item),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.blue,
+                                  foregroundColor: Colors.white,
+                                ),
+                                child: const Text('Respond to Feedback'),
+                              ),
+                            ),
                         ],
                       ),
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'Message:',
-                                style: TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(item['message'] ?? ''),
-                              if (item['adminResponse'] != null) ...[
-                                const SizedBox(height: 16),
-                                const Text(
-                                  'Admin Response:',
-                                  style: TextStyle(fontWeight: FontWeight.bold),
-                                ),
-                                const SizedBox(height: 8),
-                                Text(item['adminResponse']),
-                              ],
-                              const SizedBox(height: 16),
-                              if (item['status'] == 'pending')
-                                SizedBox(
-                                  width: double.infinity,
-                                  child: ElevatedButton(
-                                    onPressed: () =>
-                                        _showFeedbackResponseDialog(item),
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.blue,
-                                      foregroundColor: Colors.white,
-                                    ),
-                                    child: const Text('Respond to Feedback'),
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ),
-                      ],
                     ),
-                  );
-                },
+                  ],
+                ),
               );
             },
-          ),
-        ),
-      ],
+          );
+        },
+      ),
     );
   }
 
   Widget _buildFAQsTab() {
+    final TextEditingController _searchController = TextEditingController();
     return Column(
       children: [
         Padding(
           padding: const EdgeInsets.all(16),
           child: Row(
             children: [
-              const Text('FAQ Management'),
-              const Spacer(),
+              Expanded(
+                child: TextField(
+                  controller: _searchController,
+                  decoration: const InputDecoration(
+                    labelText: 'Search FAQs',
+                    prefixIcon: Icon(Icons.search),
+                    border: OutlineInputBorder(),
+                  ),
+                  onChanged: (value) {
+                    setState(() {});
+                  },
+                ),
+              ),
+              const SizedBox(width: 8),
               ElevatedButton.icon(
                 onPressed: _showAddFAQDialog,
                 icon: const Icon(Icons.add),
@@ -338,16 +283,21 @@ class _SupportFeedbackScreenState extends State<SupportFeedbackScreen> {
                 return Center(child: Text('Error: ${snapshot.error}'));
               }
               final faqs = snapshot.data ?? [];
-
-              if (faqs.isEmpty) {
+              // Filter by search term
+              final filteredFaqs = faqs.where((faq) {
+                final searchTerm = _searchController.text.toLowerCase();
+                final question = (faq['question'] ?? '').toLowerCase();
+                final answer = (faq['answer'] ?? '').toLowerCase();
+                return question.contains(searchTerm) || answer.contains(searchTerm);
+              }).toList();
+              if (filteredFaqs.isEmpty) {
                 return const Center(child: Text('No FAQs found'));
               }
-
               return ListView.builder(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
-                itemCount: faqs.length,
+                itemCount: filteredFaqs.length > 6 ? 6 : filteredFaqs.length,
                 itemBuilder: (context, index) {
-                  final faq = faqs[index];
+                  final faq = filteredFaqs[index];
                   return Card(
                     margin: const EdgeInsets.only(bottom: 8),
                     child: ExpansionTile(
