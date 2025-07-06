@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:strathapp/screens/admin/user_detail_screen.dart';
 import 'package:strathapp/screens/admin_panel_screen.dart';
+import 'package:strathapp/services/database_service.dart';
 
 class UserManagementScreen extends StatelessWidget {
   const UserManagementScreen({super.key});
@@ -82,7 +83,7 @@ class UserManagementScreen extends StatelessWidget {
                   subtitle: Text('$email\nRole: $role'),
                   isThreeLine: true,
                   trailing: PopupMenuButton<String>(
-                    onSelected: (value) {
+                    onSelected: (value) async {
                       if (value == 'view_details') {
                         Navigator.of(context).push(
                           MaterialPageRoute(
@@ -90,8 +91,38 @@ class UserManagementScreen extends StatelessWidget {
                                 UserDetailScreen(userId: user.id),
                           ),
                         );
+                      } else if (value == 'ban') {
+                        final confirm = await showDialog<bool>(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            title: const Text('Ban User'),
+                            content: Text('Are you sure you want to ban $fullName?'),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(context, false),
+                                child: const Text('Cancel'),
+                              ),
+                              ElevatedButton(
+                                onPressed: () => Navigator.pop(context, true),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.red,
+                                  foregroundColor: Colors.white,
+                                ),
+                                child: const Text('Ban'),
+                              ),
+                            ],
+                          ),
+                        );
+                        if (confirm == true) {
+                          await DatabaseService().banUser(user.id);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('$fullName has been banned.'),
+                            ),
+                          );
+                        }
                       } else {
-                        // TODO: Implement other actions ('ban', 'promote', etc.)
+                        // TODO: Implement other actions ('promote', 'demote', etc.)
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text(

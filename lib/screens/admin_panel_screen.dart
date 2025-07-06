@@ -194,7 +194,6 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
                   return _AdminProfileEditModal(
                     uid: _authService.currentUser?.uid,
                     initialName: name,
-                    initialDepartment: department,
                     initialProfilePictureURL: profilePictureURL,
                     email: email,
                   );
@@ -676,14 +675,12 @@ class ManageEventsScreen extends StatelessWidget {
 class _AdminProfileEditModal extends StatefulWidget {
   final String? uid;
   final String initialName;
-  final String initialDepartment;
   final String? initialProfilePictureURL;
   final String email;
 
   const _AdminProfileEditModal({
     required this.uid,
     required this.initialName,
-    required this.initialDepartment,
     required this.initialProfilePictureURL,
     required this.email,
   });
@@ -695,9 +692,9 @@ class _AdminProfileEditModal extends StatefulWidget {
 class _AdminProfileEditModalState extends State<_AdminProfileEditModal> {
   final _formKey = GlobalKey<FormState>();
   late String _name;
-  late String _department;
   String? _profilePictureURL;
   XFile? _pickedImage;
+  bool _isEditing = false;
   bool _loading = false;
   String? _error;
 
@@ -705,7 +702,6 @@ class _AdminProfileEditModalState extends State<_AdminProfileEditModal> {
   void initState() {
     super.initState();
     _name = widget.initialName;
-    _department = widget.initialDepartment;
     _profilePictureURL = widget.initialProfilePictureURL;
   }
 
@@ -743,11 +739,11 @@ class _AdminProfileEditModalState extends State<_AdminProfileEditModal> {
       final url = await _uploadImage(uid);
       await FirebaseFirestore.instance.collection('admins').doc(uid).update({
         'fullName': _name,
-        'department': _department,
         'profilePictureURL': url,
       });
       setState(() {
         _loading = false;
+        _isEditing = false;
       });
       if (mounted) Navigator.of(context).pop({'updated': true});
     } catch (e) {
@@ -767,119 +763,130 @@ class _AdminProfileEditModalState extends State<_AdminProfileEditModal> {
         top: 24,
         bottom: MediaQuery.of(context).viewInsets.bottom + 24,
       ),
-      child: SingleChildScrollView(
-        child: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Stack(
-                alignment: Alignment.bottomRight,
+      child: Center(
+        child: Material(
+          elevation: 4,
+          borderRadius: BorderRadius.circular(20),
+          color: Colors.white,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  CircleAvatar(
-                    radius: 48,
-                    backgroundImage: _pickedImage != null
-                        ? FileImage(
-                            // ignore: use_build_context_synchronously
-                            File(_pickedImage!.path),
-                          )
-                        : (_profilePictureURL != null
-                                  ? NetworkImage(_profilePictureURL!)
-                                  : null)
-                              as ImageProvider<Object>?,
-                    backgroundColor: Colors.grey[200],
-                    child: (_profilePictureURL == null && _pickedImage == null)
-                        ? const Icon(
-                            Icons.account_circle,
-                            size: 64,
-                            color: Colors.grey,
-                          )
-                        : null,
-                  ),
-                  Positioned(
-                    bottom: 0,
-                    right: 0,
-                    child: InkWell(
-                      onTap: _pickImage,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.grey.shade300),
-                        ),
-                        padding: const EdgeInsets.all(6),
-                        child: const Icon(
-                          Icons.camera_alt,
-                          size: 22,
-                          color: Colors.black54,
-                        ),
-                      ),
+                  GestureDetector(
+                    onTap: _isEditing ? _pickImage : null,
+                    child: CircleAvatar(
+                      radius: 36,
+                      backgroundColor: const Color(0xFF0A2B6B),
+                      backgroundImage: _pickedImage != null
+                          ? FileImage(File(_pickedImage!.path))
+                          : (_profilePictureURL != null
+                              ? NetworkImage(_profilePictureURL!)
+                              : null) as ImageProvider<Object>?,
+                      child: (_profilePictureURL == null && _pickedImage == null)
+                          ? const Icon(
+                              Icons.person,
+                              color: Colors.white,
+                              size: 40,
+                            )
+                          : null,
                     ),
+                  ),
+                  const SizedBox(height: 24),
+                  TextFormField(
+                    initialValue: _name,
+                    enabled: _isEditing,
+                    decoration: InputDecoration(
+                      labelText: 'Full Name',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      filled: true,
+                      fillColor: _isEditing ? Colors.white : Colors.grey[100],
+                    ),
+                    validator: (v) =>
+                        v == null || v.trim().isEmpty ? 'Enter name' : null,
+                    onChanged: (v) => _name = v,
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    initialValue: widget.email,
+                    enabled: false,
+                    decoration: InputDecoration(
+                      labelText: 'Email',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      filled: true,
+                      fillColor: Colors.grey[100],
+                    ),
+                  ),
+                  if (_error != null) ...[
+                    const SizedBox(height: 12),
+                    Text(_error!, style: const TextStyle(color: Colors.red)),
+                  ],
+                  const SizedBox(height: 24),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      if (!_isEditing)
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF0A2B6B),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              _isEditing = true;
+                            });
+                          },
+                          child: const Text('Edit'),
+                        ),
+                      if (_isEditing)
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF0A2B6B),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          onPressed: _loading ? null : _save,
+                          child: _loading
+                              ? const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : const Text('Save'),
+                        ),
+                      if (_isEditing) const SizedBox(width: 12),
+                      if (_isEditing)
+                        OutlinedButton(
+                          style: OutlinedButton.styleFrom(
+                            side: const BorderSide(color: Color(0xFF0A2B6B)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              _isEditing = false;
+                            });
+                          },
+                          child: const Text('Cancel'),
+                        ),
+                    ],
                   ),
                 ],
               ),
-              const SizedBox(height: 24),
-              TextFormField(
-                initialValue: _name,
-                decoration: const InputDecoration(
-                  labelText: 'Full Name',
-                  border: OutlineInputBorder(),
-                ),
-                validator: (v) =>
-                    v == null || v.trim().isEmpty ? 'Enter name' : null,
-                onChanged: (v) => _name = v,
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                initialValue: _department,
-                decoration: const InputDecoration(
-                  labelText: 'Department',
-                  border: OutlineInputBorder(),
-                ),
-                validator: (v) =>
-                    v == null || v.trim().isEmpty ? 'Enter department' : null,
-                onChanged: (v) => _department = v,
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                initialValue: widget.email,
-                enabled: false,
-                decoration: const InputDecoration(
-                  labelText: 'Email',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              if (_error != null) ...[
-                const SizedBox(height: 12),
-                Text(_error!, style: const TextStyle(color: Colors.red)),
-              ],
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  icon: _loading
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : const Icon(Icons.save),
-                  label: Text(_loading ? 'Saving...' : 'Save Changes'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _AdminPanelScreenState.primaryBlue,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  onPressed: _loading ? null : _save,
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),
