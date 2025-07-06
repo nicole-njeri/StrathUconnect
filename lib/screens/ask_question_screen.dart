@@ -159,8 +159,8 @@ class _AskQuestionScreenState extends State<AskQuestionScreen> {
                               MaterialPageRoute(
                                 builder: (context) => QuestionDetailScreen(
                                   questionId: doc.id,
-                                  questionText: data['question'] ?? '',
-                                  askedBy: data['userEmail'] ?? 'Anonymous',
+                                  questionText: data['title'] ?? '',
+                                  askedBy: data['posterEmail'] ?? 'Anonymous',
                                   timestamp:
                                       (data['timestamp'] as Timestamp?)
                                           ?.toDate() ??
@@ -175,7 +175,7 @@ class _AskQuestionScreenState extends State<AskQuestionScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  data['question'] ?? '',
+                                  data['title'] ?? '',
                                   style: const TextStyle(
                                     fontWeight: FontWeight.w600,
                                     fontSize: 15,
@@ -188,7 +188,7 @@ class _AskQuestionScreenState extends State<AskQuestionScreen> {
                                       MainAxisAlignment.spaceBetween,
                                   children: [
                                     Text(
-                                      data['userEmail'] ?? 'Anonymous',
+                                      data['posterEmail'] ?? 'Anonymous',
                                       style: const TextStyle(
                                         color: Colors.grey,
                                         fontSize: 13,
@@ -299,6 +299,93 @@ class _AskQuestionScreenState extends State<AskQuestionScreen> {
                                             Text('$count'),
                                           ],
                                         );
+                                      },
+                                    ),
+                                    // Report button
+                                    IconButton(
+                                      icon: const Icon(
+                                        Icons.flag,
+                                        color: Colors.red,
+                                        size: 20,
+                                      ),
+                                      tooltip: 'Report',
+                                      onPressed: () async {
+                                        final TextEditingController
+                                        _reasonController =
+                                            TextEditingController();
+                                        final result = await showDialog<String>(
+                                          context: context,
+                                          builder: (context) => AlertDialog(
+                                            title: const Text('Report Post'),
+                                            content: Column(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                const Text(
+                                                  'Why are you reporting this post?',
+                                                ),
+                                                const SizedBox(height: 12),
+                                                TextField(
+                                                  controller: _reasonController,
+                                                  decoration:
+                                                      const InputDecoration(
+                                                        labelText: 'Reason',
+                                                        border:
+                                                            OutlineInputBorder(),
+                                                      ),
+                                                  minLines: 2,
+                                                  maxLines: 4,
+                                                ),
+                                              ],
+                                            ),
+                                            actions: [
+                                              TextButton(
+                                                onPressed: () =>
+                                                    Navigator.pop(context),
+                                                child: const Text('Cancel'),
+                                              ),
+                                              ElevatedButton(
+                                                onPressed: () {
+                                                  if (_reasonController.text
+                                                      .trim()
+                                                      .isNotEmpty) {
+                                                    Navigator.pop(
+                                                      context,
+                                                      _reasonController.text
+                                                          .trim(),
+                                                    );
+                                                  }
+                                                },
+                                                child: const Text('Submit'),
+                                              ),
+                                            ],
+                                          ),
+                                        );
+                                        if (result != null &&
+                                            result.isNotEmpty) {
+                                          final user =
+                                              FirebaseAuth.instance.currentUser;
+                                          await FirebaseFirestore.instance
+                                              .collection('reports')
+                                              .add({
+                                                'postType': 'question',
+                                                'postId': doc.id,
+                                                'reportedBy':
+                                                    user?.email ?? 'Anonymous',
+                                                'reportedById': user?.uid ?? '',
+                                                'reason': result,
+                                                'timestamp':
+                                                    FieldValue.serverTimestamp(),
+                                              });
+                                          ScaffoldMessenger.of(
+                                            context,
+                                          ).showSnackBar(
+                                            const SnackBar(
+                                              content: Text(
+                                                'Thank you for your report.',
+                                              ),
+                                            ),
+                                          );
+                                        }
                                       },
                                     ),
                                   ],
