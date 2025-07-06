@@ -154,6 +154,32 @@ class _QuestionDetailScreenState extends State<QuestionDetailScreen> {
                                           ),
                                         )
                                       : const SizedBox(),
+                                  IconButton(
+                                    icon: const Icon(
+                                      Icons.flag,
+                                      color: Colors.red,
+                                      size: 20,
+                                    ),
+                                    tooltip: 'Report',
+                                    onPressed: () {
+                                      showDialog(
+                                        context: context,
+                                        builder: (context) => AlertDialog(
+                                          title: const Text('Report Answer'),
+                                          content: const Text(
+                                            'Feature coming soon.',
+                                          ),
+                                          actions: [
+                                            TextButton(
+                                              onPressed: () =>
+                                                  Navigator.pop(context),
+                                              child: const Text('OK'),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                    },
+                                  ),
                                 ],
                               ),
                             ],

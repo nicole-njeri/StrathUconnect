@@ -301,6 +301,34 @@ class _AskQuestionScreenState extends State<AskQuestionScreen> {
                                         );
                                       },
                                     ),
+                                    // Report button
+                                    IconButton(
+                                      icon: const Icon(
+                                        Icons.flag,
+                                        color: Colors.red,
+                                        size: 20,
+                                      ),
+                                      tooltip: 'Report',
+                                      onPressed: () {
+                                        // TODO: Show report dialog/modal
+                                        showDialog(
+                                          context: context,
+                                          builder: (context) => AlertDialog(
+                                            title: const Text('Report Post'),
+                                            content: const Text(
+                                              'Feature coming soon.',
+                                            ),
+                                            actions: [
+                                              TextButton(
+                                                onPressed: () =>
+                                                    Navigator.pop(context),
+                                                child: const Text('OK'),
+                                              ),
+                                            ],
+                                          ),
+                                        );
+                                      },
+                                    ),
                                   ],
                                 ),
                               ],
