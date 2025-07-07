@@ -253,102 +253,123 @@ class _DashboardScreen extends StatelessWidget {
       future: _db.getAdminDashboardStats(),
       builder: (context, statsSnapshot) {
         final stats = statsSnapshot.data ?? {};
-        return SingleChildScrollView(
-          padding: const EdgeInsets.all(0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Summary Cards Row
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 32, 16, 8),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: _SummaryCard(
-                        icon: Icons.people,
-                        label: 'Total Users',
-                        value: stats['totalStudents']?.toString() ?? '[X]',
-                        color: Color(0xFFEAF3FF),
-                        iconColor: Color(0xFF0A2B6B),
-                      ),
+        return FutureBuilder<String?>(
+          future: adminNameFuture,
+          builder: (context, nameSnapshot) {
+            String adminName = 'Admin';
+            if (nameSnapshot.hasData && nameSnapshot.data != null && nameSnapshot.data!.isNotEmpty) {
+              adminName = nameSnapshot.data!.split(' ')[0];
+            }
+            return SingleChildScrollView(
+              padding: const EdgeInsets.all(0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 32),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: Text(
+                      'Hi $adminName 👋',
+                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: const Color(0xFF0A2B6B),
+                          ),
                     ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: _SummaryCard(
-                        icon: Icons.event,
-                        label: 'Active Events',
-                        value: stats['activeEvents']?.toString() ?? '[Y]',
-                        color: Color(0xFFEAF3FF),
-                        iconColor: Color(0xFF0A2B6B),
-                      ),
+                  ),
+                  const SizedBox(height: 24),
+                  // Summary Cards Row
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: _SummaryCard(
+                            icon: Icons.people,
+                            label: 'Total Users',
+                            value: stats['totalStudents']?.toString() ?? '[X]',
+                            color: Color(0xFFEAF3FF),
+                            iconColor: Color(0xFF0A2B6B),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: _SummaryCard(
+                            icon: Icons.event,
+                            label: 'Active Events',
+                            value: stats['activeEvents']?.toString() ?? '[Y]',
+                            color: Color(0xFFEAF3FF),
+                            iconColor: Color(0xFF0A2B6B),
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
+                  // Grid of Action Cards
+                  Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: GridView.count(
+                      crossAxisCount: 2,
+                      shrinkWrap: true,
+                      physics: NeverScrollableScrollPhysics(),
+                      mainAxisSpacing: 16,
+                      crossAxisSpacing: 16,
+                      children: [
+                        _AdminActionCard(
+                          icon: Icons.people,
+                          label: 'User Management',
+                          onTap: () => Navigator.of(context).push(
+                            MaterialPageRoute(builder: (_) => const UserManagementScreen()),
+                          ),
+                        ),
+                        _AdminActionCard(
+                          icon: Icons.event,
+                          label: 'Events Management',
+                          onTap: () => Navigator.of(context).push(
+                            MaterialPageRoute(builder: (_) => const ManageEventsScreen()),
+                          ),
+                        ),
+                        _AdminActionCard(
+                          icon: Icons.forum,
+                          label: 'Forum Management',
+                          onTap: () => Navigator.of(context).push(
+                            MaterialPageRoute(builder: (_) => const ForumModerationScreen()),
+                          ),
+                        ),
+                        _AdminActionCard(
+                          icon: Icons.checklist,
+                          label: 'Onboarding Checklists',
+                          onTap: () => Navigator.of(context).push(
+                            MaterialPageRoute(builder: (_) => const ChecklistManagementScreen()),
+                          ),
+                        ),
+                        _AdminActionCard(
+                          icon: Icons.notifications,
+                          label: 'Notifications Management',
+                          onTap: () => Navigator.of(context).push(
+                            MaterialPageRoute(builder: (_) => const NotificationManagementScreen()),
+                          ),
+                        ),
+                        _AdminActionCard(
+                          icon: Icons.bar_chart,
+                          label: 'Reports',
+                          onTap: () => Navigator.of(context).push(
+                            MaterialPageRoute(builder: (_) => const ReportsScreen()),
+                          ),
+                        ),
+                        _AdminActionCard(
+                          icon: Icons.support_agent,
+                          label: 'FAQs and Feedback',
+                          onTap: () => Navigator.of(context).push(
+                            MaterialPageRoute(builder: (_) => const SupportFeedbackScreen()),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-              // Grid of Action Cards
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: GridView.count(
-                  crossAxisCount: 2,
-                  shrinkWrap: true,
-                  physics: NeverScrollableScrollPhysics(),
-                  mainAxisSpacing: 16,
-                  crossAxisSpacing: 16,
-                  children: [
-                    _AdminActionCard(
-                      icon: Icons.people,
-                      label: 'User Management',
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => const UserManagementScreen()),
-                      ),
-                    ),
-                    _AdminActionCard(
-                      icon: Icons.event,
-                      label: 'Events Management',
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => const ManageEventsScreen()),
-                      ),
-                    ),
-                    _AdminActionCard(
-                      icon: Icons.forum,
-                      label: 'Forum Management',
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => const ForumModerationScreen()),
-                      ),
-                    ),
-                    _AdminActionCard(
-                      icon: Icons.checklist,
-                      label: 'Onboarding Checklists',
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => const ChecklistManagementScreen()),
-                      ),
-                    ),
-                    _AdminActionCard(
-                      icon: Icons.notifications,
-                      label: 'Notifications Management',
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => const NotificationManagementScreen()),
-                      ),
-                    ),
-                    _AdminActionCard(
-                      icon: Icons.bar_chart,
-                      label: 'Reports',
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => const ReportsScreen()),
-                      ),
-                    ),
-                    _AdminActionCard(
-                      icon: Icons.support_agent,
-                      label: 'FAQs and Feedback',
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => const SupportFeedbackScreen()),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
+            );
+          },
         );
       },
     );
@@ -690,9 +711,9 @@ class _AdminProfileEditModal extends StatefulWidget {
 }
 
 class _AdminProfileEditModalState extends State<_AdminProfileEditModal> {
-  final _formKey = GlobalKey<FormState>();
-  late String _name;
-  String? _profilePictureURL;
+  late TextEditingController _nameController;
+  late TextEditingController _emailController;
+  File? _profileImage;
   XFile? _pickedImage;
   bool _isEditing = false;
   bool _loading = false;
@@ -701,25 +722,31 @@ class _AdminProfileEditModalState extends State<_AdminProfileEditModal> {
   @override
   void initState() {
     super.initState();
-    _name = widget.initialName;
-    _profilePictureURL = widget.initialProfilePictureURL;
+    _nameController = TextEditingController(text: widget.initialName);
+    _emailController = TextEditingController(text: widget.email);
+    // If you want to support initial profile image from URL, handle it in build
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _emailController.dispose();
+    super.dispose();
   }
 
   Future<void> _pickImage() async {
     final picker = ImagePicker();
-    final picked = await picker.pickImage(
-      source: ImageSource.gallery,
-      imageQuality: 75,
-    );
-    if (picked != null) {
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+    if (pickedFile != null) {
       setState(() {
-        _pickedImage = picked;
+        _profileImage = File(pickedFile.path);
+        _pickedImage = pickedFile;
       });
     }
   }
 
   Future<String?> _uploadImage(String uid) async {
-    if (_pickedImage == null) return _profilePictureURL;
+    if (_pickedImage == null) return widget.initialProfilePictureURL;
     final ref = FirebaseStorage.instance.ref().child(
       'admin_profile_images/$uid.jpg',
     );
@@ -728,7 +755,6 @@ class _AdminProfileEditModalState extends State<_AdminProfileEditModal> {
   }
 
   Future<void> _save() async {
-    if (!_formKey.currentState!.validate()) return;
     setState(() {
       _loading = true;
       _error = null;
@@ -738,7 +764,7 @@ class _AdminProfileEditModalState extends State<_AdminProfileEditModal> {
       if (uid == null) throw Exception('User not found');
       final url = await _uploadImage(uid);
       await FirebaseFirestore.instance.collection('admins').doc(uid).update({
-        'fullName': _name,
+        'fullName': _nameController.text.trim(),
         'profilePictureURL': url,
       });
       setState(() {
@@ -767,125 +793,119 @@ class _AdminProfileEditModalState extends State<_AdminProfileEditModal> {
         child: Material(
           elevation: 4,
           borderRadius: BorderRadius.circular(20),
-          color: Colors.white,
+          color: const Color(0xFFF6EEDD),
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  GestureDetector(
-                    onTap: _isEditing ? _pickImage : null,
-                    child: CircleAvatar(
-                      radius: 36,
-                      backgroundColor: const Color(0xFF0A2B6B),
-                      backgroundImage: _pickedImage != null
-                          ? FileImage(File(_pickedImage!.path))
-                          : (_profilePictureURL != null
-                              ? NetworkImage(_profilePictureURL!)
-                              : null) as ImageProvider<Object>?,
-                      child: (_profilePictureURL == null && _pickedImage == null)
-                          ? const Icon(
-                              Icons.person,
-                              color: Colors.white,
-                              size: 40,
-                            )
-                          : null,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                GestureDetector(
+                  onTap: _isEditing ? _pickImage : null,
+                  child: CircleAvatar(
+                    radius: 36,
+                    backgroundColor: const Color(0xFF0A2B6B),
+                    backgroundImage: _profileImage != null
+                        ? FileImage(_profileImage!)
+                        : (widget.initialProfilePictureURL != null
+                            ? NetworkImage(widget.initialProfilePictureURL!)
+                            : null) as ImageProvider<Object>?,
+                    child: _profileImage == null && widget.initialProfilePictureURL == null
+                        ? const Icon(
+                            Icons.person,
+                            color: Colors.white,
+                            size: 40,
+                          )
+                        : null,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                TextField(
+                  controller: _nameController,
+                  enabled: _isEditing,
+                  decoration: InputDecoration(
+                    labelText: 'Full Name',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
+                    filled: true,
+                    fillColor: _isEditing ? Colors.white : Colors.grey[100],
                   ),
-                  const SizedBox(height: 24),
-                  TextFormField(
-                    initialValue: _name,
-                    enabled: _isEditing,
-                    decoration: InputDecoration(
-                      labelText: 'Full Name',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      filled: true,
-                      fillColor: _isEditing ? Colors.white : Colors.grey[100],
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: _emailController,
+                  enabled: false,
+                  decoration: InputDecoration(
+                    labelText: 'Email',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    validator: (v) =>
-                        v == null || v.trim().isEmpty ? 'Enter name' : null,
-                    onChanged: (v) => _name = v,
+                    filled: true,
+                    fillColor: Colors.grey[100],
                   ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    initialValue: widget.email,
-                    enabled: false,
-                    decoration: InputDecoration(
-                      labelText: 'Email',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      filled: true,
-                      fillColor: Colors.grey[100],
-                    ),
-                  ),
-                  if (_error != null) ...[
-                    const SizedBox(height: 12),
-                    Text(_error!, style: const TextStyle(color: Colors.red)),
-                  ],
-                  const SizedBox(height: 24),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      if (!_isEditing)
-                        ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF0A2B6B),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          onPressed: () {
-                            setState(() {
-                              _isEditing = true;
-                            });
-                          },
-                          child: const Text('Edit'),
-                        ),
-                      if (_isEditing)
-                        ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF0A2B6B),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          onPressed: _loading ? null : _save,
-                          child: _loading
-                              ? const SizedBox(
-                                  width: 18,
-                                  height: 18,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Colors.white,
-                                  ),
-                                )
-                              : const Text('Save'),
-                        ),
-                      if (_isEditing) const SizedBox(width: 12),
-                      if (_isEditing)
-                        OutlinedButton(
-                          style: OutlinedButton.styleFrom(
-                            side: const BorderSide(color: Color(0xFF0A2B6B)),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          onPressed: () {
-                            setState(() {
-                              _isEditing = false;
-                            });
-                          },
-                          child: const Text('Cancel'),
-                        ),
-                    ],
-                  ),
+                ),
+                if (_error != null) ...[
+                  const SizedBox(height: 12),
+                  Text(_error!, style: const TextStyle(color: Colors.red)),
                 ],
-              ),
+                const SizedBox(height: 24),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    if (!_isEditing)
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF0A2B6B),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            _isEditing = true;
+                          });
+                        },
+                        child: const Text('Edit'),
+                      ),
+                    if (_isEditing)
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF0A2B6B),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        onPressed: _loading ? null : _save,
+                        child: _loading
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Text('Save'),
+                      ),
+                    if (_isEditing) const SizedBox(width: 12),
+                    if (_isEditing)
+                      OutlinedButton(
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(color: Color(0xFF0A2B6B)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            _isEditing = false;
+                          });
+                        },
+                        child: const Text('Cancel'),
+                      ),
+                  ],
+                ),
+              ],
             ),
           ),
         ),
